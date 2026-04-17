@@ -1,0 +1,3267 @@
+<html>
+<body>
+
+#if($load.isInterleaved)
+
+	<!-- START of BOL for INTERLEAVING LOADS -->
+
+	<!-- Master Page -->
+	#foreach($stop in $vw3g_Stop_Template1List)				 
+		#if($stop.DataValue_StopType == "Pickup" && $stop.StopNum == "1")
+			#set($bolDate = $stop.schedDateTimeEarlyArrival)
+			#set($origAddrName = $!stop.LocName)
+			#set($origAddr1 = $!stop.Addr1)
+			#set($origCity = $!stop.CityName)
+			#set($origState = $!stop.StateCode)
+			#set($origZip = $!stop.PostalCode)
+			#set($origCountry = $!stop.CountryName)			
+			#set($origApptRequired = $!stop.isAppointmentRequired)
+		#end
+		#if($stop.DataValue_StopType == "Delivery")
+			#set($destAddrName = $!stop.LocName)
+			#set($destAddr1 = $!stop.Addr1)
+			#set($destCity = $!stop.CityName)
+			#set($destState = $!stop.StateCode)
+			#set($destZip = $!stop.PostalCode)
+			#set($destCountry = $!stop.CountryName)
+			#set($destApptNum = $!stop.appointmentNum)
+			#set($destApptDateTime = $!stop.dateTime_Appointment)
+			#set($destContName = $!stop.defaultContactName)
+			#set($destContPhone = $!stop.defaultContactPhone1)
+			#set($destApptRequired = $!stop.isAppointmentRequired)
+		#end
+	#end
+	
+	<!--#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+		#set($destApptRequired = $!ordHdr.isAppointmentRequiredDelivery)
+	#end-->
+	
+	<!--#if($load.locIdBillTo)
+		#foreach($loc in $vw3g_Loc_Template1Map)
+			#if( $load.locIdBillTo == $loc.locId)
+				#set($billToName = $!loc.addrName)
+				#set($billToAddr1= $!loc.addr1)
+				#set($billToAddr2= $!loc.addr2)
+				#set($billToCity= $!loc.cityName)
+				#set($billToState= $!loc.StateCode)
+				#set($billToZip= $!loc.PostalCode)
+			#end
+		#end
+	#else 
+		#set($billToName = "Automated Logistics Systems - Laredo")
+		#set($billToAddr1 = "5902 Riverside Drive")
+		#set($billToAddr2 = "")
+		#set($billToCity = "Laredo")
+		#set($billToState = "TX")
+		#set($billToZip = "78041")
+	#end--> 
+	
+	<!--#foreach($cost in $loadCostList)
+		#if($cost.dataValue_CostType == 'Accessorial' and (($cost.accessorialCodeId == 10) or ($cost.accessorialCodeId == 14) or ($cost.accessorialCodeId == 26) or ($cost.accessorialCodeId == 27) or ($cost.accessorialCodeId == 31) or ($cost.accessorialCodeId == 32) or ($cost.accessorialCodeId == 36) or ($cost.accessorialCodeId == 40)))
+			#if($acclist)
+				#set($acclist = $acclist + ", " + $cost.accessorialCodeDescription)
+			#else
+				#set($acclist = $cost.accessorialCodeDescription)
+			#end
+		#end
+	#end-->
+	
+	<!--#foreach($OrdServ in $vw3g_OrdService_Template1List)							
+		#if(($OrdServ.accessorialCodeId == 10) or ($OrdServ.accessorialCodeId == 14) or ($OrdServ.accessorialCodeId == 26) or ($OrdServ.accessorialCodeId == 27) or ($OrdServ.accessorialCodeId == 31) or ($OrdServ.accessorialCodeId == 32) or ($OrdServ.accessorialCodeId == 36) or ($OrdServ.accessorialCodeId == 40))
+			#if($acclist)
+				#set($acclist = $acclist + ", " + $!OrdServ.accCodeDesc)
+			#else
+				#set($acclist = $!OrdServ.accCodeDesc)
+			#end
+		#end
+	#end-->
+	
+	<!-- Find unique Accessorials -->
+    #set($myAccessorialMap = {})
+    #foreach($OrdServ in $vw3g_OrdService_Template1List)
+		#if(($OrdServ.accessorialCodeId == 10) || ($OrdServ.accessorialCodeId == 14) || ($OrdServ.accessorialCodeId == 26) || ($OrdServ.accessorialCodeId == 27) || ($OrdServ.accessorialCodeId == 31) || ($OrdServ.accessorialCodeId == 32) || ($OrdServ.accessorialCodeId == 36) || ($OrdServ.accessorialCodeId == 40))
+			#set($accessorialKey = $!OrdServ.accCodeDesc)
+			#if(!$myAccessorialMap.get($accessorialKey))
+				#set($discard = $myAccessorialMap.put($accessorialKey, $accessorialKey))       
+			#end
+		#end
+    #end
+    #foreach($key in $myAccessorialMap.keySet())        
+        #set($acclist = $myAccessorialMap.get($key))
+    #end
+	
+	#if($load.locIdBillTo)
+	    #foreach($loc in $locMap)
+	        #if( $load.locIdBillTo == $loc.locId)
+	            #set ($rtBillToName = $!loc.addrName)
+	            #set( $rtBillToAddr1= $!loc.Addr1)
+	            #set( $rtBillToAddr2= $!loc.Addr2)
+	            #set( $rtBillToCity= $!loc.CityName)
+	            #set( $rtBillToState= $!loc.StateCode)
+	            #set( $rtBillToZip= $!loc.PostalCode)
+	        #end
+	    #end
+	#end
+	
+	#foreach($ctp, in $carrierTradingPartner.TradingPartnerCarriers)		 	
+		#set($scac = $!ctp.Scac)
+	#end
+	#set($CarrierName = $carrierTradingPartner.TradingPartnerName)
+	#set($CarrierName = $CarrierName.replace("Collect", " "))
+	#set($pageCnt = 1)
+	
+	<!-- $vw3g_Stop_Template1List -->
+	<table cellspacing="0" cellpadding="0" style="font-family: arial">
+		<tr>
+			<td colspan="2">
+				<table border=".75" cellspacing="0">
+					<tr> 
+						<td  border="0"><b>Date: $!date.format('MM-dd-yyyy',$!date.toDate("yyyy-MM-dd'T'HH:mm:ss.SSS",$bolDate))</b></td>
+						<td align="center" border="0" style="font-size:12"><b>BILL OF LADING - MASTER</b></td>
+						<td align="right"  border="0"><b>Page $!pageCnt</b></td> 
+					</tr> 
+				</table>
+			</td>
+		</tr>
+		<tr> 
+			<td>
+				<table border=".75" cellpadding="0" cellspacing="0">
+					<tr bgcolor="black"> 
+						<td style="height:3; font-size:8" align="center"><font color="white"><b>SHIP FROM</b></font></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">Name: $!origAddrName</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">Address: $!origAddr1</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">City/State/Zip: $!origCity, $!origState  $!origZip</td>
+					</tr>
+					
+					
+					<tr> 
+					
+						<td style="font-size:8"> &nbsp;  #if($!origApptRequired == "true") Pickup Appt#: $!origApptNum  #end</td>
+					
+					</tr>
+					
+					
+				</table>
+			</td>
+			<td border=".75">
+				<table cellpadding="0" cellspacing="0" border="0">
+					 
+					<tr> 
+						<td style="font-size:12"> <b>&nbsp; Bill of Lading Number:  <u>$!load.BolNum</u></b></td>
+					</tr>
+					<tr> 
+						<td style="font-size:12"><b>&nbsp; ALS Load Number: <u> $!load.LoadNum </b></u></td>
+					</tr>
+<tr> 
+						<td style="font-size:8">&nbsp; Shipment ID</td>
+					</tr>
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "SID")
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName =="SID")
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Customer Order Number: $!trailerRNs</td>
+
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Ref Numbers: $!trailerRNs</td>
+					</tr>
+					<tr> 
+					<tr> 
+						<td style="font-size:2">&nbsp;</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr valign="top"> 
+			<td>
+				<table border=".75" cellpadding="0" cellspacing="0">
+					<tr bgcolor="black"> 
+						<td style="font-size:8" align="center"><font color="white"><b>SHIP TO</b></font></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">Name: $!destAddrName</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:8">Address: $!destAddr1</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">City/State/Zip: $!destCity, $!destState  $!destZip</td>
+					</tr>
+					
+					<tr> 
+						<td style="font-size:8">  &nbsp; #if($!destApptRequired == "true") <b>Delivery Appt:</b>  #end  #if($!destApptDateTime or $!destApptNum) $!destApptNum $!destApptDateTime  $!destContName  $!destContPhone #end</td>
+					</tr>  
+					
+					<tr bgcolor="black"> 
+						<td style="font-size:8" align="center"><font color="white"><b>THIRD PARTY FREIGHT CHARGES BILL TO:</b></font></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">Name: $!rtBillToName</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">Address: $!rtBillToAddr1 $!rtBillToAddr2</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">City/State/Zip: $!rtBillToCity, $!rtBillToState $!rtBillToZip</td>
+					</tr> 
+					<tr> 
+						#if((!$destApptDateTime || !$destApptNum) && $destApptRequired == "true")
+							<td style="font-size:8" rowspan="3">
+								<b>SPECIAL INSTRUCTIONS:</b> Please schedule appt with consignee, contact $!destContPhone<br/>
+									#foreach($comment in $loadCommentList)
+										#foreach($q in $qualifierMap)
+											#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+												$comment.CommentValue<br/> 
+											#end
+										#end
+									#end 
+									$!acclist
+							</td>
+						#else
+							<td style="font-size:8" rowspan="3">
+								<b>SPECIAL INSTRUCTIONS: </b>
+									#foreach($comment in $loadCommentList)
+										#foreach($q in $qualifierMap)
+											#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+												$comment.CommentValue<br/> 
+											#end
+										#end
+									#end 
+									$!acclist
+							</td>
+						#end
+					</tr>
+				</table>
+			</td>
+			<td border=".75">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:8" colspan="3"> <b>CARRIER: $!CarrierName  </b></td>
+					</tr>
+					<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "Trailer Number")
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName =="Trailer Number")
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8" colspan="3">Trailer Number: $!trailerRNs</td>
+					</tr>
+					<tr> 
+						#set($sealNum = 0)
+						#set($sealRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "Seal Number")
+												#set($sealNum = 1)
+											
+												#if($sealRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($sealRNs = $sealRNs + ", " + $singleRef)	
+												#else 
+													#set($sealRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($sealNum == 0)
+												#if($q.qualifierName =="Seal Number")
+													#if($sealRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($sealRNs = $sealRNs + ", " + $singleRef)
+													#else 
+														#set($sealRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8" colspan="3">Seal Number(s): $!sealRNs</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8" colspan="3"> <b>SCAC:  <u>$!scac</u></b></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8" colspan="3"> <b>Pro Number:  <u> $!load.ProNum</u></b></td>
+					</tr>
+					<tr> 
+						<td style="font-size:8" colspan="3">   <b> Carrier Quote Number:  <u> $!loadTenderList[0].quoteReferenceNum  </u></b>   </td>
+					</tr>
+
+					
+					#set($rtLoadDivision = $!load.tradingPartnerIdDivision)
+					
+					#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+						#if($ordHdr.tradingPartnerIdDivision>0 && $ordHdr.tradingPartnerIdDivision>0) 
+							#if($ordHdr.tradingPartnerIdDivision == $rtLoadDivision)					
+								#set($rtFreightTerms = $ordHdr.dataValue_FreightTerms)
+							#end
+						#end
+					#end
+					
+					<tr> 
+						<td style="font-size:8" colspan="3"><hr width="100%"><b>Freight Charge Terms:</b><sup>(freight charges prepaid unless marked)</sup></td>
+					</tr> 
+					
+					#if($rtFreightTerms == "PPD")
+						<tr> 
+							<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party___[X]___</td>
+						</tr>
+					#elseif($rtFreightTerms == "COL")
+						<tr> 
+							<td style="font-size:8" colspan="3">Prepaid______  Collect_____  3rd Party___[X]___</td>
+						</tr>
+					#elseif($rtFreightTerms == "TP")
+						<tr> 
+							<td style="font-size:8" colspan="3">Prepaid______  Collect______  3rd Party__[X]___</td>
+						</tr>
+					#else
+						<tr> 
+							<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party___[X]___</td>
+						</tr>
+					#end
+					
+					<tr> 
+						<td style="font-size:8" align="right">___ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</td>
+						<td colspan="2"style="font-size:8" >Master Bill of Lading: with attached</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8" align="right"><sup>(check box)</sup> &nbsp; &nbsp; &nbsp;</td>
+						<td colspan="2" style="font-size:8" >underlying Bills of Lading</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	#set($loadWgt = $!number.format("#0.00", $!load.weightGrossTot.value))
+	<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+		<tr bgcolor="black">
+			<td style="font-size:8" align="center" colspan="14"><font color="white"><b>CUSTOMER ORDER INFORMATION</b></font></td>
+		</tr>
+		<tr>
+			<td colspan="3" style="font-size:8" align="center" >CUSTOMER ORDER NUMBER</td>
+			<td style="font-size:8" align="center" ># PLTS</td>
+			<td colspan="2" style="font-size:8" align="center" >WEIGHT</td>
+			<td colspan="8" style="font-size:8" align="center" >ADDITIONAL SHIPPER INFO</td>
+		</tr>
+
+		#if ($vw3g_OrdHeaderLoad_Template1List)			 
+			#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+				#if($ordHdr.ordHeaderId > 1)					
+					#set ($wtUOM = $ordHdr.wtUomDataValue_NetTot)				 
+					<tr>
+						<td colspan="3" style="font-size:8" align="center" >$!ordHdr.OrdNum</td>
+						<td style="font-size:8" align="center" >$!ordHdr.HandlingUnitCountTot</td>
+						<td colspan="2" style="font-size:8" align="center" >$!number.format("#0.00", $!ordHdr.Wt_NetTot) $!wtUOM</td>
+						<td colspan="8" style="font-size:8" align="center" >
+							#set($otherRNs = "")
+							#set($singleRef = "")
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "Purchase Order Number" || $q.qualifierName =="Quote Number" || $q.qualifierName == "Pickup Number" || $q.qualifierName == "PO Number")
+												#if($otherRNs.length() > 0) 
+													#set($singleRef = $!q.description +":" +$!refNum.refNumValue)
+													#set($otherRNs = $otherRNs + ", " + $!singleRef)
+												#else 
+													#set($otherRNs = $!q.description +":"+ $!refNum.refNumValue)
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "Shipper BOL")
+												#if($otherRNs.length()>0)
+													#set($singleRef = $!q.description +":" +$!refNum.refNumValue)
+													#set($otherRNs = $otherRNs + ", " + $singleRef)
+												#else 
+													#set($otherRNs = $!q.description +":"+$!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#end
+							#end								
+							$!otherRNs
+						</td>
+					</tr>
+				 #end 
+			#end
+		#end
+		<tr>
+			<td colspan="3" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td>
+			<td style="font-size:8" align="center" >$!load.handlingUnitCountTot</td>
+			<td colspan="2" style="font-size:8" align="center" >$!loadWgt $!wtUOM</td>
+			<td style="font-size:8" align="center" colspan="8" bgcolor="gray">&nbsp;</td>
+		</tr>
+	</table>
+		
+	<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+		<tr bgcolor="black">
+			<td style="font-size:8" align="center" colspan="16"><font color="white"><b>CARRIER INFORMATION</b></font></td>
+		</tr>
+		<tr>
+			<td style="font-size:8" align="center" colspan="4">HANDLING UNIT</td>
+			<td style="font-size:8" align="center" colspan="2">PACKAGE</td>
+			<td style="font-size:8" align="center" colspan="2">WEIGHT</td>
+			<td style="font-size:8" align="center" >H.M.<br>(x)</td>
+			<td colspan="5" style="font-size:8" align="center" >COMMODITY DESCRIPTION</td>
+			<td colspan="2" style="font-size:8" align="center">LTL ONLY</td>
+		</tr>
+		<tr>
+			<td style="font-size:8" align="center">QTY</td>
+			<td style="font-size:8" align="center">TYPE</td>
+			<td style="font-size:8" align="center" colspan="2">DIM</td>
+			<td style="font-size:8" align="center">QTY</td>
+			<td style="font-size:8" align="center">TYPE</td>
+			<td style="font-size:8" align="center" colspan="2" bgcolor="gray">&nbsp;</td>
+			<td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+			<td colspan="5" style="font-size:5" align="center">
+				Commodities requiring special or additional care or attention in handling or stowing must be 
+				so marked and packaged as to ensure safe transportation with ordinary care. <br/>
+				See Section 2(e) of NMFC Item 360
+			</td>
+			<td colspan="1" style="font-size:8" align="center">NMFC#</td>
+			<td style="font-size:8" align="center">CLASS</td>
+		</tr>
+		#if ($vw3g_HandlingUnitLine_Template1List)			 
+			#foreach($commodity in $vw3g_HandlingUnitLine_Template1List)			 
+				<tr>
+					<td style="font-size:8" align="center">$!commodity.HandlingUnitCountPlanned</td>
+					<td style="font-size:8" align="center">$!commodity.handlingUnitTypeName</td>
+					<td style="font-size:8" align="center" colspan="2">
+						$!number.format("#0", $!commodity.dim_HandlingUnitLengthPlanned) x 
+						$!number.format("#0", $!commodity.dim_HandlingUnitWidthPlanned) x 
+						$!number.format("#0", $!commodity.dim_HandlingUnitHeightPlanned) ($!commodity.dimUomDataValue_HandlingUnitLengthPlanned)
+					</td>
+					<td style="font-size:8" align="center">$!commodity.PieceCountPlanned</td>
+					<td style="font-size:8" align="center">$!commodity.handlingUnitTypeNamePiece</td>
+					<td style="font-size:8" align="center" colspan="2">$!number.format("#0.00", $!commodity.WeightGrossPlanned.Value) $!commodity.WeightGrossPlanned.Uom</td>
+					<td style="font-size:8" align="center">#if($commodity.isHazmatPlanned == "true") X #end</td>
+				<td colspan="5" style="font-size:8" align="center">
+  #if($commodity.unClass) $!commodity.unClass, #end 
+  #if($commodity.DescriptionPlanned) $!commodity.DescriptionPlanned #end 
+  #if($commodity.HazmatClassification) ,$!commodity.HazmatClassification, #end 
+  #if($commodity.hazmatPackingGroup) $!commodity.hazmatPackingGroup #end  
+  #if($commodity.isHazmatPlanned && $commodity.hazmatContactNumber)
+    <br/>Emergency Contact: $!commodity.hazmatContactNumber
+  #end
+</td>
+
+
+					<td colspan="1" style="font-size:8" align="center">$!commodity.nmfcCodePlanned</td>
+					<td style="font-size:8" align="center">$!commodity.dataValue_FreightClassPlanned</td>
+				</tr>				 
+			#end
+		#end
+		<tr>
+			<td style="font-size:8" align="center">$!load.handlingUnitCountTot</td>
+			<td style="font-size:8" align="center" colspan="3" bgcolor="gray">&nbsp;</td>
+			<td style="font-size:8" align="center">$!load.pieceCountTot</td>
+			<td style="font-size:8" align="center" bgcolor="gray"></td>
+			<td style="font-size:8" align="center" colspan="2">$!loadWgt $!wtUOM</td>
+			<td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+			<td colspan="5" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td>
+			<td colspan="1" style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+			<td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+		</tr>
+	</table>
+
+	<table cellspacing="0" cellpadding="0" style="font-family: arial">
+		<tr> 
+			<td border=".75">
+				<table border="0" cellpadding="0" cellspacing="0">
+					<tr> 
+						<td style="font-size:6">Where the rate is dependent on value, shippers are required to state specifically in writing the<br />agreed or declared value of the property as follows:</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">“The agreed or declared value of the property is specifically stated by the shipper to be not exceeding</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">____________ per ____________.</td>
+					</tr>
+				</table>
+			</td>
+			<td border="1.25">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:8" align="center"><b>COD Amount: $___________________</b></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8" align="center">Fee Terms:    Collect:______    Prepaid:______</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8" align="center">Customer check acceptable:______</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td style="font-size:8" colspan="2" border=".75"><b>NOTE Liability Limitation for loss or damage in this shipment may be applicable. See 49 U.S.C. - 14706(c)(1)(A) and (B).</b></td>
+		</tr>
+		<tr> 
+			<td border=".75">
+				<table border="0" cellpadding="0" cellspacing="0">
+					<tr> 
+						<td style="font-size:6">RECEIVED, subject to individually determined rates or contracts that have been agreed upon in</td> 
+					</tr> 
+					<tr> 
+						<td style="font-size:6">writing between the carrier and shipper, if applicable, otherwise to the rates, classifications and</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:6">rules that have been established by the carrier and are available to the shipper, on request, and</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:6">to all applicable state and federal regulations.</td>
+					</tr>
+				</table>
+			</td>
+			<td border=".75">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:6">The carrier shall not make delivery of this shipment without payment of freight</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:6">and all other lawful charges.</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">_______________________________________<b>Shipper Signature</b></td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	<table cellspacing="0" cellpadding="0" style="font-family: arial">
+		<tr> 
+			<td border=".75" valign="top">
+				<table border="0" cellpadding="0" cellspacing="0">
+					<tr> 
+						<td style="font-size:8">SHIPPER SIGNATURE / DATE</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:6">This is to certify that the above named materials are properly<br />classified,packaged, marked and labeled, and are in proper</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:6">condition for transportation according to the applicable regulations</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">of the DOT.</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+				</table>
+			</td>
+			<td border=".75" valign="top">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:7" colspan="8">&nbsp;CONSIGNEE SIGNATURE</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:7" colspan="8">__________________________________________</td>
+					</tr>
+					<tr> 
+						<td style="font-size:7" colspan="8">&nbsp;PRINT NAME</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:7" colspan="8">__________________________________________</td>
+					</tr>
+					<tr> 
+						<td style="font-size:7" colspan="8">&nbsp;DATE</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+					</tr>
+					<tr> 
+						<td style="font-size:7" colspan="8">&nbsp;CHECK #</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+					</tr>				
+				</table>
+			</td>
+			<td border=".75" valign="top">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:8">CARRIER SIGNATURE / PICKUP DATE</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:6">Carrier acknowledges receipt of packages and required placards.<br />Carrier certifies emergency response information was made</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:6">available and/or carrier has the DOT emergency response<br />guidebook or equivalent documentation in the vehicle. Property</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">described above is received in good order, except as noted.</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+	
+	<!-- End of Master Page-->
+	#pageBreak()
+	
+	<!-- Find unique OD pairs -->
+	#set($myODMap = {})
+	#foreach($oh in $vw3g_OrdHeaderLoad_Template1List)
+		#set($odKey = $oh.locIdOrig + '-' + $oh.locIdDest + '*' + $oh.ordStopNumOrig + '_' + $oh.ordStopNumDest)
+		#if(!$myODMap.get($odKey))
+			#set($discard = $myODMap.put($odKey, $odKey))		
+		#end							 
+	#end
+	 
+	
+	<!-- Loop through each origin/destination pair of the load -->
+	#foreach($key in $myODMap.keySet())
+		#set($pageCnt = $pageCnt + 1)
+		#set($odStr = $myODMap.get($key))
+		#set($index1 = $odStr.indexOf('-'))
+		#set($ind1 = $index1 + 1)
+		#set($index2 = $odStr.indexOf('*'))
+		#set($index3 = $odStr.indexOf('_'))
+		#set($ind2 = $index2 + 1)
+		#set($ind3 = $index3 + 1)
+		
+		#set($origLocId = $odStr.substring(0,$index1))		
+		#set($destLocId = $odStr.substring($ind1, $index2))				
+		#set($origStopNum = $odStr.substring($ind2,$index3))		
+		#set($destStopNum = $odStr.substring($ind3))
+		
+		<!-- Get origin/destination address details -->	
+        #set($sfAddrName = "")		
+		#set($sfAddr1 = "")		
+		#set($sfCity = "")		
+		#set($sfState = "")		
+		#set($sfZip = "")		
+		#set($sfCountry = "")		
+		#set($sfDate = "")	
+		#set($stAddrName = "")		
+		#set($stAddr1 = "")		
+		#set($stCity = "")		
+		#set($stState = "")		
+		#set($stZip = "")		
+		#set($stCountry = "")		
+		#set($stDate = "")			
+		#foreach($stop in $vw3g_Stop_Template1List)				 
+			#if($stop.DataValue_StopType == "Pickup" && $stop.LocId == $origLocId)
+				#set($sfAddrName = $!stop.LocName)
+				#set($sfAddr1 = $!stop.Addr1)
+				#set($sfCity = $!stop.CityName)
+				#set($sfState = $!stop.StateCode)
+				#set($sfZip = $!stop.PostalCode)
+				#set($sfCountry = $!stop.CountryName)		
+				#set($sfDate = $stop.schedDateTimeEarlyArrival)
+				#set($origApptRequired = $!stop.isAppointmentRequired)
+			#end
+			#if($stop.DataValue_StopType == "Delivery" && $stop.locId == $destLocId)
+				#set($stAddrName = $!stop.LocName)
+				#set($stAddr1 = $!stop.Addr1)
+				#set($stCity = $!stop.CityName)
+				#set($stState = $!stop.StateCode)
+				#set($stZip = $!stop.PostalCode)
+				#set($stCountry = $!stop.CountryName)
+				#set($stDate = $!stop.schedDateTimeLateArrival)
+				#set($stApptNum = $!stop.appointmentNum)
+				#set($stApptDateTime = $!stop.dateTime_Appointment)
+				#set($stContName = $!stop.defaultContactName)
+				#set($stContPhone = $!stop.defaultContactPhone1)
+				#set($stApptRequired = $!stop.isAppointmentRequired)
+			#end
+		#end
+		
+		#set($odFreightTerms = "")
+		#set($sfApptNum = "")
+		#set($stApptNum = "")
+		#set($rtLoadDivision = $!load.tradingPartnerIdDivision)						
+		#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+			#if($ordHdr.locIdOrig == $origLocId && $ordHdr.locIdDest == $destLocId)
+				#if($ordHdr.tradingPartnerIdDivision>0 && $ordHdr.tradingPartnerIdDivision>0) 
+					#if($ordHdr.tradingPartnerIdDivision == $rtLoadDivision)					
+						#set($odFreightTerms = $ordHdr.dataValue_FreightTerms)
+					#end
+				#end
+				 
+				#set($sfApptNum = $ordHdr.appointmentNumPickup)
+				#set($stApptNum = $ordHdr.appointmentNumDelivery)				
+			#end
+		#end	
+		
+		<!-- PAGE for EACH ORIGIN/DESTINATION PAIR -->
+		<table cellspacing="0" cellpadding="0" style="font-family: arial">
+			<tr>
+				<td colspan="2">
+					<table border=".75" cellspacing="0">
+						<tr> 
+							<td  border="0"><b>Date: $!date.format('MM-dd-yyyy',$!date.toDate("yyyy-MM-dd'T'HH:mm:ss.SSS",$sfDate))</b></td>
+							<td align="center" border="0" style="font-size:12"><b>BILL OF LADING </b></td>
+							<td align="right"  border="0"><b>Page $!pageCnt</b></td> 
+						</tr> 
+					</table>
+				</td>
+			</tr>
+			<tr> 
+				<td>
+					<table border=".75" cellpadding="0" cellspacing="0">
+						<tr bgcolor="black"> 
+							<td style="height:3; font-size:8" align="center"><font color="white"><b>SHIP FROM - STOP $!origStopNum</b></font></td>
+						</tr> 
+						<tr> 
+							<td style="font-size:8">Name: $!sfAddrName</td>
+						</tr>
+						<tr> 
+							<td style="font-size:8">Address: $!sfAddr1</td>
+						</tr>
+						<tr> 
+							<td style="font-size:8">City/State/Zip: $!sfCity, $!sfState  $!sfZip</td>
+						</tr>
+						
+						
+						<tr> 
+						
+							<td style="font-size:8"> &nbsp; #if($!origApptRequired == "true")  Pickup Appt#: $!sfApptNum #end</td>
+						
+						</tr>
+						
+					</table>
+				</td>
+				<td border=".75">
+				<table cellpadding="0" cellspacing="0" border="0">
+					 
+					<tr> 
+						<td style="font-size:12"> <b>&nbsp; Bill of Lading Number:  <u>$!load.BolNum</u></b></td>
+					</tr>
+					<tr> 
+						<td style="font-size:12"><b>&nbsp; ALS Load Number: <u> $!load.LoadNum </b></u></td>
+					</tr>
+<tr> 
+						<td style="font-size:8">&nbsp; Shipment ID</td>
+					</tr>
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "SID")
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName =="SID")
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Customer Order Number: $!trailerRNs</td>
+
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Ref Numbers: $!trailerRNs</td>
+					</tr>
+					<tr> 
+						<td style="font-size:2">&nbsp;</td>
+					</tr>
+				</table>
+				</td>
+			</tr>
+			<tr valign="top"> 
+				<td>
+					<table border=".75" cellpadding="0" cellspacing="0">
+						<tr bgcolor="black"> 
+							<td style="font-size:8" align="center"><font color="white"><b>SHIP TO - STOP $!destStopNum</b></font></td>
+						</tr> 
+						<tr> 
+							<td style="font-size:8">Name: $!stAddrName</td> 
+						</tr>
+						<tr> 
+							<td style="font-size:8">Address: $!stAddr1</td>
+						</tr>
+						<tr> 
+							<td style="font-size:8">City/State/Zip: $!stCity, $!stState  $!stZip</td>
+						</tr>
+						
+						<tr> 
+							<td style="font-size:8"> &nbsp; #if($!destApptRequired == "true")<b>Delivery Appt:</b>  #end  #if($!stApptDateTime or $!stApptNum) $!stApptNum $!stApptDateTime  $!stContName  $!stContPhone #end</td>
+						</tr>  
+						
+						<tr bgcolor="black"> 
+							<td style="font-size:8" align="center"><font color="white"><b>THIRD PARTY FREIGHT CHARGES BILL TO:</b></font></td>
+						</tr> 
+						<tr> 
+							<td style="font-size:8">Name: $!rtBillToName</td>
+						</tr>
+						<tr> 
+							<td style="font-size:8">Address: $!rtBillToAddr1 $!rtBillToAddr2</td>
+						</tr>
+						<tr> 
+							<td style="font-size:8">City/State/Zip: $!rtBillToCity, $!rtBillToState $!rtBillToZip</td>
+						</tr> 
+						<tr> 
+							#if((!$stApptDateTime || !$stApptNum) && $stApptRequired == "true")
+								<td style="font-size:8" rowspan="3">
+									<b>SPECIAL INSTRUCTIONS:</b> Please schedule appt with consignee, contact $!stContPhone<br/>
+										#foreach($comment in $loadCommentList)
+											#foreach($q in $qualifierMap)
+												#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+													$comment.CommentValue<br/> 
+												#end
+											#end
+										#end
+									$!acclist
+								</td>
+							#else
+							<td style="font-size:8" rowspan="3">
+								<b>SPECIAL INSTRUCTIONS: </b>
+									#foreach($comment in $loadCommentList)
+										#foreach($q in $qualifierMap)
+											#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+												$comment.CommentValue<br/> 
+											#end
+										#end
+									#end
+									$!acclist
+							</td>
+							#end
+						</tr>
+					</table>
+				</td>
+				<td border=".75">
+					<table cellpadding="0" cellspacing="0" border="0">
+						<tr> 
+							<td style="font-size:8" colspan="3"> <b>CARRIER: $!CarrierName  </b></td>
+						</tr>
+						<tr> 							
+							<td style="font-size:8" colspan="3">Trailer Number: </td>
+						</tr>
+						<tr> 							 
+							<td style="font-size:8" colspan="3">Seal Number(s): </td>
+						</tr>
+						<tr> 
+							<td style="font-size:8" colspan="3"> <b>SCAC:  <u>$!scac</u></b></td>
+						</tr> 
+						<tr> 
+							<td style="font-size:8" colspan="3"> <b>Pro Number:  <u> $!load.ProNum</u></b></td>
+						</tr>
+						<tr> 
+						<td style="font-size:8" colspan="3">   <b> Carrier Quote Number:  <u> $!loadTenderList[0].quoteReferenceNum  </u></b> </td>
+						</tr>
+	
+					 				
+						<tr> 
+							<td style="font-size:8" colspan="3"><hr width="100%"><b>Freight Charge Terms:</b><sup>(freight charges prepaid unless marked)</sup></td>
+						</tr> 
+						
+						#if($odFreightTerms == "PPD")
+							<tr> 
+								<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party___[X]___</td>
+							</tr>
+						#elseif($odFreightTerms == "COL")
+							<tr> 
+								<td style="font-size:8" colspan="3">Prepaid______  Collect_____  3rd Party___[X]___</td>
+							</tr>
+						#elseif($odFreightTerms == "TP")
+							<tr> 
+								<td style="font-size:8" colspan="3">Prepaid______  Collect______  3rd Party__[X]___</td>
+							</tr>
+						#else
+							<tr> 
+								<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party__[X]___</td>
+							</tr>
+						#end
+						
+						<tr> 
+							<td style="font-size:8" align="right">___ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</td>
+							<td colspan="2"style="font-size:8" >Master Bill of Lading: with attached</td>
+						</tr> 
+						<tr> 
+							<td style="font-size:8" align="right"><sup>(check box)</sup> &nbsp; &nbsp; &nbsp;</td>
+							<td colspan="2" style="font-size:8" >underlying Bills of Lading</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+
+		<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+			<tr bgcolor="black">
+				<td style="font-size:8" align="center" colspan="14"><font color="white"><b>CUSTOMER ORDER INFORMATION</b></font></td>
+			</tr>
+			<tr>
+				<td colspan="3" style="font-size:8" align="center" >CUSTOMER ORDER NUMBER</td>
+				<td style="font-size:8" align="center" ># PLTS</td>
+				<td colspan="2" style="font-size:8" align="center" >WEIGHT</td>
+				<td colspan="8" style="font-size:8" align="center" >ADDITIONAL SHIPPER INFO</td>
+			</tr>
+			 		 
+			#set($odHUTot = 0)
+			#set($odWgtTot = 0)
+			#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+				#if($ordHdr.locIdOrig == $origLocId && $ordHdr.locIdDest == $destLocId)					
+					#set ($wtUOM = $ordHdr.wtUomDataValue_NetTot)	
+					#set($odHUTot = $odHUTot + $ordHdr.HandlingUnitCountTot)
+					#set($odWgtTot = $odWgtTot + $ordHdr.Wt_NetTot)
+					<tr>
+						<td colspan="3" style="font-size:8" align="center" >$!ordHdr.OrdNum</td>
+						<td style="font-size:8" align="center" >$!ordHdr.HandlingUnitCountTot</td>
+						<td colspan="2" style="font-size:8" align="center" >$!number.format("#0.00", $!ordHdr.Wt_NetTot) $!wtUOM</td>
+						<td colspan="8" style="font-size:8" align="center" >
+							#set($otherRNs = "")
+							#set($singleRef = "")
+							#foreach($refNum in $consolidatedRefNumViews)								
+								#if($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "Shipper BOL")
+												#if($otherRNs.length()>0)
+													#set($singleRef = $!q.description +":" +$!refNum.refNumValue)
+													#set($otherRNs = $otherRNs + ", " + $singleRef)
+												#else 
+													#set($otherRNs = $!q.description +":"+$!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#end
+							#end								
+							$!otherRNs
+						</td>
+					</tr>
+				 #end 
+			#end			 
+			<tr>
+				<td colspan="3" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td>
+				<td style="font-size:8" align="center" >$!odHUTot</td>
+				<td colspan="2" style="font-size:8" align="center" >$!number.format("#0.00", $odWgtTot) $!wtUOM</td>
+				<td style="font-size:8" align="center" colspan="8" bgcolor="gray">&nbsp;</td>
+			</tr>
+		</table>
+		
+		<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+			<tr bgcolor="black">
+				<td style="font-size:8" align="center" colspan="16"><font color="white"><b>CARRIER INFORMATION</b></font></td>
+			</tr>
+			<tr>
+				<td style="font-size:8" align="center" colspan="4">HANDLING UNIT</td>
+				<td style="font-size:8" align="center" colspan="2">PACKAGE</td>
+				<td style="font-size:8" align="center" colspan="2">WEIGHT</td>
+				<td style="font-size:8" align="center" >H.M.<br>(x)</td>
+				<td colspan="5" style="font-size:8" align="center" >COMMODITY DESCRIPTION</td>
+				<td colspan="2" style="font-size:8" align="center">LTL ONLY</td>
+			</tr>
+			<tr>
+				<td style="font-size:8" align="center">QTY</td>
+				<td style="font-size:8" align="center">TYPE</td>
+				<td style="font-size:8" align="center" colspan="2">DIM</td>
+				<td style="font-size:8" align="center">QTY</td>
+				<td style="font-size:8" align="center">TYPE</td>
+				<td style="font-size:8" align="center" colspan="2" bgcolor="gray">&nbsp;</td>
+				<td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+				<td colspan="5" style="font-size:5" align="center">
+					Commodities requiring special or additional care or attention in handling or stowing must be 
+					so marked and packaged as to ensure safe transportation with ordinary care. <br/>
+					See Section 2(e) of NMFC Item 360
+				</td>
+				<td colspan="1" style="font-size:8" align="center">NMFC#</td>
+				<td style="font-size:8" align="center">CLASS</td>
+			</tr>								
+							
+			#set($odHUCnt = 0)
+			#set($odPcsCnt = 0)
+			#set($odWgt = 0)			
+			#foreach($commodity in $vw3g_HandlingUnitLine_Template1List)	
+				#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+					#if($commodity.OrdNum == $ordHdr.OrdNum && $ordHdr.locIdOrig == $origLocId && $ordHdr.locIdDest == $destLocId) <!-- FIX HERE -->
+						#set($odHUCnt = $odHUCnt + $commodity.HandlingUnitCountPlanned)
+						#set($odPcsCnt = $odPcsCnt + $commodity.PieceCountPlanned)
+						#set($odWgt = $odWgt + $commodity.WeightGrossPlanned.Value)						
+						<tr>
+							<td style="font-size:8" align="center">$!commodity.HandlingUnitCountPlanned</td>
+							<td style="font-size:8" align="center">$!commodity.handlingUnitTypeName</td>
+							<td style="font-size:8" align="center" colspan="2">
+								$!number.format("#0", $!commodity.dim_HandlingUnitLengthPlanned) x 
+								$!number.format("#0", $!commodity.dim_HandlingUnitWidthPlanned) x 
+								$!number.format("#0", $!commodity.dim_HandlingUnitHeightPlanned) ($!commodity.dimUomDataValue_HandlingUnitLengthPlanned)
+							</td>
+							<td style="font-size:8" align="center">$!commodity.PieceCountPlanned</td>
+							<td style="font-size:8" align="center">$!commodity.handlingUnitTypeNamePiece</td>
+							<td style="font-size:8" align="center" colspan="2">$!number.format("#0.00", $!commodity.WeightGrossPlanned.Value) $!commodity.WeightGrossPlanned.Uom</td>
+							<td style="font-size:8" align="center">#if($commodity.isHazmatPlanned == "true") X #end</td>
+							<td colspan="5" style="font-size:8" align="center">
+  #if($commodity.unClass) $!commodity.unClass, #end 
+  #if($commodity.DescriptionPlanned) $!commodity.DescriptionPlanned #end 
+  #if($commodity.HazmatClassification) ,$!commodity.HazmatClassification, #end 
+  #if($commodity.hazmatPackingGroup) $!commodity.hazmatPackingGroup #end  
+  #if($commodity.isHazmatPlanned && $commodity.hazmatContactNumber)
+    <br/>Emergency Contact: $!commodity.hazmatContactNumber
+  #end
+</td>
+
+
+							<td colspan="1" style="font-size:8" align="center">$!commodity.nmfcCodePlanned</td>
+							<td style="font-size:8" align="center">$!commodity.dataValue_FreightClassPlanned</td>
+						</tr>				 
+					#end
+				#end 
+			#end
+			<tr>
+				<td style="font-size:8" align="center">$!odHUCnt</td>
+				<td style="font-size:8" align="center" colspan="3" bgcolor="gray">&nbsp;</td>
+				<td style="font-size:8" align="center">$!odPcsCnt</td>
+				<td style="font-size:8" align="center" bgcolor="gray"></td>
+				<td style="font-size:8" align="center" colspan="2">$!number.format("#0.00", $odWgt) $!wtUOM</td>
+				<td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+				<td colspan="5" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td>
+				<td colspan="1" style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+				<td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+			</tr>
+		</table>
+
+		<table cellspacing="0" cellpadding="0" style="font-family: arial">
+			<tr> 
+				<td border=".75">
+					<table border="0" cellpadding="0" cellspacing="0">
+						<tr> 
+							<td style="font-size:6">Where the rate is dependent on value, shippers are required to state specifically in writing the<br />agreed or declared value of the property as follows:</td>
+						</tr> 
+						<tr> 
+							<td style="font-size:8">&nbsp;</td>
+						</tr>
+						<tr> 
+							<td style="font-size:6">“The agreed or declared value of the property is specifically stated by the shipper to be not exceeding</td>
+						</tr>
+						<tr> 
+							<td style="font-size:8">____________ per ____________.</td>
+						</tr>
+					</table>
+				</td>
+				<td border="1.25">
+					<table cellpadding="0" cellspacing="0" border="0">
+						<tr> 
+							<td style="font-size:8" align="center"><b>COD Amount: $___________________</b></td>
+						</tr> 
+						<tr> 
+							<td style="font-size:8">&nbsp;</td>
+						</tr>
+						<tr> 
+							<td style="font-size:8" align="center">Fee Terms:    Collect:______    Prepaid:______</td>
+						</tr>
+						<tr> 
+							<td style="font-size:8" align="center">Customer check acceptable:______</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td style="font-size:8" colspan="2" border=".75"><b>NOTE Liability Limitation for loss or damage in this shipment may be applicable. See 49 U.S.C. - 14706(c)(1)(A) and (B).</b></td>
+			</tr>
+			<tr> 
+				<td border=".75">
+					<table border="0" cellpadding="0" cellspacing="0">
+						<tr> 
+							<td style="font-size:6">RECEIVED, subject to individually determined rates or contracts that have been agreed upon in</td> 
+						</tr> 
+						<tr> 
+							<td style="font-size:6">writing between the carrier and shipper, if applicable, otherwise to the rates, classifications and</td> 
+						</tr>
+						<tr> 
+							<td style="font-size:6">rules that have been established by the carrier and are available to the shipper, on request, and</td> 
+						</tr>
+						<tr> 
+							<td style="font-size:6">to all applicable state and federal regulations.</td>
+						</tr>
+					</table>
+				</td>
+				<td border=".75">
+					<table cellpadding="0" cellspacing="0" border="0">
+						<tr> 
+							<td style="font-size:6">The carrier shall not make delivery of this shipment without payment of freight</td>
+						</tr> 
+						<tr> 
+							<td style="font-size:6">and all other lawful charges.</td>
+						</tr>
+						<tr> 
+							<td style="font-size:6">&nbsp;</td>
+						</tr>
+						<tr> 
+							<td style="font-size:8">_______________________________________<b>Shipper Signature</b></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+
+		<table cellspacing="0" cellpadding="0" style="font-family: arial">
+			<tr> 
+				<td border=".75" valign="top">
+					<table border="0" cellpadding="0" cellspacing="0">
+						<tr> 
+							<td style="font-size:8">SHIPPER SIGNATURE / DATE</td>
+						</tr> 
+						<tr> 
+							<td style="font-size:6">This is to certify that the above named materials are properly<br />classified,packaged, marked and labeled, and are in proper</td> 
+						</tr>
+						<tr> 
+							<td style="font-size:6">condition for transportation according to the applicable regulations</td>
+						</tr>
+						<tr> 
+							<td style="font-size:6">of the DOT.</td>
+						</tr>
+						<tr> 
+							<td style="font-size:6">&nbsp;</td>
+						</tr>
+						<tr> 
+							<td style="font-size:6">&nbsp;</td>
+						</tr>
+					</table>
+				</td>
+				<td border=".75" valign="top">
+					<table cellpadding="0" cellspacing="0" border="0">
+						<tr> 
+							<td style="font-size:7" colspan="8">&nbsp;CONSIGNEE SIGNATURE</td>
+						</tr> 
+						<tr> 
+							<td style="font-size:7" colspan="8">__________________________________________</td>
+						</tr>
+						<tr> 
+							<td style="font-size:7" colspan="8">&nbsp;PRINT NAME</td>
+						</tr> 
+						<tr> 
+							<td style="font-size:7" colspan="8">__________________________________________</td>
+						</tr>
+						<tr> 
+							<td style="font-size:7" colspan="8">&nbsp;DATE</td>
+						</tr> 
+						<tr> 
+							<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+						</tr>
+						<tr> 
+							<td style="font-size:7" colspan="8">&nbsp;CHECK #</td>
+						</tr> 
+						<tr> 
+							<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+						</tr>				
+					</table>
+				</td>
+				<td border=".75" valign="top">
+					<table cellpadding="0" cellspacing="0" border="0">
+						<tr> 
+							<td style="font-size:8">CARRIER SIGNATURE / PICKUP DATE</td>
+						</tr> 
+						<tr> 
+							<td style="font-size:6">Carrier acknowledges receipt of packages and required placards.<br />Carrier certifies emergency response information was made</td> 
+						</tr>
+						<tr> 
+							<td style="font-size:6">available and/or carrier has the DOT emergency response<br />guidebook or equivalent documentation in the vehicle. Property</td>
+						</tr>
+						<tr> 
+							<td style="font-size:6">described above is received in good order, except as noted.</td>
+						</tr>
+						<tr> 
+							<td style="font-size:6">&nbsp;</td>
+						</tr>
+						<tr> 
+							<td style="font-size:6">&nbsp;</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		
+		#pageBreak()
+	#end
+	
+	
+	<!-- END of BOL for INTERLEAVING LOADS -->
+	
+#else
+
+	<!-- START of BOL for NON-INTERLEAVING LOADS -->
+
+	#foreach($stop in $vw3g_Stop_Template1List)
+		#set( $rtStopCount = $!stop.StopNum )
+	#end
+			
+	#if ($vw3g_OrdHeaderLoad_Template1List)
+		#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+			#if ($foreach.count == "1")
+				#foreach($stop in $vw3g_Stop_Template1List)
+					#if ($stop.DataValue_StopType == "Pickup")
+						#if ($stop.LocNum == $ordHdr.LocNumOrig)
+							#set( $rtOrigName = $!ordHdr.LocNameOrig )
+							#set ($rtOrigContactName = $!ordHdr.LocDefaultContactNameOrig)
+							#set ($rtOrigContactPhone = $!ordHdr.LocDefaultContactPhone1Orig)
+						#else
+							#set( $rtOrigName = $!stop.LocName)
+							#set ($rtOrigContactName = $!stop.DefaultContactName)
+							#set ($rtOrigContactPhone = $!stop.DefaultContactPhone1)
+						#end
+					#end
+					#if ($stop.DataValue_StopType == "Delivery")
+						#if ($stop.LocNum == $ordHdr.LocNumDest)
+							#set( $rtDestName = $!ordHdr.LocNameDest)
+							#set ($rtDestContactName = $!ordHdr.LocDefaultContactNameDest)
+							#set ($rtDestContactPhone = $!ordHdr.LocDefaultContactPhone1Dest)
+						#else
+							#set( $rtDestName = $!stop.LocName)
+							#set ($rtDestContactName =  $!stop.DefaultContactName)
+							#set ($rtDestContactPhone = $!stop.DefaultContactPhone1)
+						#end
+					#end
+				#end
+			#end
+		#end
+	#end 
+
+	#foreach($item, in $carrierTradingPartner.TradingPartnerCarriers)
+		 
+		 
+		#set( $rtTPCScac = $!item.Scac)
+			#foreach($refNum in $loadRefNumList) 
+				#if ($refNum.Qualifier.QualifierName == "Carrier SCAC")
+					#set($rtTPCScac = $!refNum.RefNumValue)
+				#end 
+			#end
+		#set( $rtTPCFax = $!carrierTradingPartnerContact.Fax)
+	#end
+
+	#if ($vw3g_Stop_Template1List)
+		#foreach($stop in $vw3g_Stop_Template1List)
+			#if($stop.DataValue_StopType == "Pickup"  and $stop.StopNum == "1")
+				#set($rtPUAddrName = $!stop.LocName)
+				#set($rtPUAddr1 = $!stop.Addr1)
+				#set($rtPUCity = $!stop.CityName)
+				#set($rtPUState = $!stop.StateCode)
+				#set($rtPUZip = $!stop.PostalCode)
+				#set($rtPUCountry = $!stop.CountryName)
+				#set($rtPcsOrd = $!stop.PieceCountTotPlanned)
+				#set($rtHUOrd = $!stop.HandlingUnitCountTotPlanned)
+				#set($rtWgtOrd = $!number.format("#0.00", $!stop.Wt_NetTotPlanned))
+				#set($origApptRequired = $!stop.isAppointmentRequired)
+			#end
+			#if($stop.DataValue_StopType == "Delivery")
+				#set($rtDELAddrName = $!stop.LocName)
+				#set($rtDELAddr1 = $!stop.Addr1)
+				#set($rtDELCity = $!stop.CityName)
+				#set($rtDELState = $!stop.StateCode)
+				#set($rtDELZip = $!stop.PostalCode)
+				#set($rtDELCountry = $!stop.CountryName)
+				#set($rtDELApptNum = $!stop.appointmentNum)
+				#set($rtDELApptDateTime = $!stop.dateTime_Appointment)
+				#set($rtDELContName = $!stop.defaultContactName)
+				#set($rtDELContPhone = $!stop.defaultContactPhone1)
+				#set($rtDELApptRequired = $!stop.isAppointmentRequired)
+			#end
+		#end
+	#end
+
+	<!--#if($load.locIdBillTo)
+		#foreach($loc in $vw3g_Loc_Template1Map)
+			#if( $load.locIdBillTo == $loc.locId)
+				#set($rtBillToName = $!loc.addrName)
+				#set($rtBillToAddr1= $!loc.addr1)
+				#set($rtBillToAddr2= $!loc.addr2)
+				#set($rtBillToCity= $!loc.cityName)
+				#set($rtBillToState= $!loc.StateCode)
+				#set($rtBillToZip= $!loc.PostalCode)
+			#end
+		#end
+	#else 
+		#set($billToName = "Automated Logistics Systems - Laredo")
+		#set($billToAddr1 = "5902 Riverside Drive")
+		#set($billToAddr2 = "")
+		#set($billToCity = "Laredo")
+		#set($billToState = "TX")
+		#set($billToZip = "78041")
+	#end-->
+	
+	<!--#foreach($cost in $loadCostList)
+		#if($cost.dataValue_CostType == 'Accessorial' and (($cost.accessorialCodeId == 10) or ($cost.accessorialCodeId == 14) or ($cost.accessorialCodeId == 26) or ($cost.accessorialCodeId == 27) or ($cost.accessorialCodeId == 31) or ($cost.accessorialCodeId == 32) or ($cost.accessorialCodeId == 36) or ($cost.accessorialCodeId == 40)))
+			#if($acclist)
+				#set($acclist = $acclist + ", " + $cost.accessorialCodeDescription)
+			#else
+				#set($acclist = $cost.accessorialCodeDescription)
+			#end
+		#end
+	#end-->
+	
+	<!--#foreach($OrdServ in $vw3g_OrdService_Template1List)							
+		#if(($OrdServ.accessorialCodeId == 10) or ($OrdServ.accessorialCodeId == 14) or ($OrdServ.accessorialCodeId == 26) or ($OrdServ.accessorialCodeId == 27) or ($OrdServ.accessorialCodeId == 31) or ($OrdServ.accessorialCodeId == 32) or ($OrdServ.accessorialCodeId == 36) or ($OrdServ.accessorialCodeId == 40))
+			#if($acclist)
+				#set($acclist = $acclist + ", " + $!OrdServ.accCodeDesc)
+			#else
+				#set($acclist = $!OrdServ.accCodeDesc)
+			#end
+		#end
+	#end-->
+	
+	<!-- Find unique Accessorials -->
+    #set($myAccessorialMap = {})
+    #foreach($OrdServ in $vw3g_OrdService_Template1List)
+		#if(($OrdServ.accessorialCodeId == 10) || ($OrdServ.accessorialCodeId == 14) || ($OrdServ.accessorialCodeId == 26) || ($OrdServ.accessorialCodeId == 27) || ($OrdServ.accessorialCodeId == 31) || ($OrdServ.accessorialCodeId == 32) || ($OrdServ.accessorialCodeId == 36) || ($OrdServ.accessorialCodeId == 40))
+			#set($accessorialKey = $!OrdServ.accCodeDesc)
+			#if(!$myAccessorialMap.get($accessorialKey))
+				#set($discard = $myAccessorialMap.put($accessorialKey, $accessorialKey))       
+			#end     
+		#end
+    #end
+    #foreach($key in $myAccessorialMap.keySet())        
+        #set($acclist = $myAccessorialMap.get($key))
+    #end
+
+	#if($load.locIdBillTo)
+	    #foreach($loc in $locMap)
+	        #if( $load.locIdBillTo == $loc.locId)
+	            #set ($rtBillToName = $!loc.addrName)
+	            #set( $rtBillToAddr1= $!loc.Addr1)
+	            #set( $rtBillToAddr2= $!loc.Addr2)
+	            #set( $rtBillToCity= $!loc.CityName)
+	            #set( $rtBillToState= $!loc.StateCode)
+	            #set( $rtBillToZip= $!loc.PostalCode)
+	        #end
+	    #end
+	#end
+
+	#set($CarrierSCAC = $carrierTradingPartner.TradingPartnerName)
+	#set($CarrierSCAC = $CarrierSCAC.replace("Collect", " "))
+
+	#foreach($refNum in $loadRefNumList) 
+		#if ($refNum.Qualifier.QualifierName == "Carrier SCAC")
+			#set($CarrierSCAC = $!refNum.RefNumValue)
+		#end 
+	#end
+
+	#if ($vw3g_Stop_Template1List)
+		#foreach($stop in $vw3g_Stop_Template1List)
+			#if($stop.StopNum == "2")
+				#if($stop.DataValue_StopType == "Delivery")
+					#set($rtLoadType = "PD")
+				#else 
+					#set($rtLoadType = "PP")
+				#end
+			#end
+			#if($stop.StopNum == "1")
+				#set($rtLoadPUDate = $stop.schedDateTimeEarlyArrival)
+				#set($rtPUApptRequired = $stop.isAppointmentRequired)
+			#end
+		#end
+	#end 
+
+	#set($rtPcsLd = $!load.pieceCountTot)
+	#set($rtHULd = $!load.handlingUnitCountTot)
+	#set($rtWgtLd = $!number.format("#0.00", $!load.weightGrossTot.value))
+
+	#set($totHULineCount=0)
+	#if($vw3g_HandlingUnitLine_Template1List)
+		#foreach($commodity in $vw3g_HandlingUnitLine_Template1List)
+			#set($totHULineCount = $totHULineCount+1)
+		#end
+	#end
+	#set($totOrdCount=0)
+	#if($vw3g_OrdHeaderLoad_Template1List)
+		#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+			#set($totOrdCount = $totOrdCount+1)
+			#set($rtPUApptNum = $ordHdr.appointmentNumPickup)
+			#set($rtDELApptNum = $ordHdr.appointmentNumDelivery)
+		#end
+	#end
+	#set ($totLines = $totOrdCount + $!totHULineCount)
+
+	
+	<table cellspacing="0" cellpadding="0" style="font-family: arial">
+		<tr>
+			<td colspan="2">
+				<table border=".75" cellspacing="0">
+					<tr> 
+						<td  border="0"><b>Date: $!date.format('MM-dd-yyyy',$!date.toDate("yyyy-MM-dd'T'HH:mm:ss.SSS",$rtLoadPUDate))</b></td><td align="center" border="0" style="font-size:12"><b>BILL OF LADING - MASTER</b></td><td align="right"  border="0"><b>Page 1</b></td> 
+					</tr> 
+				</table>
+			</td>
+		</tr>
+		<tr> 
+			<td>
+				<table border=".75" cellpadding="0" cellspacing="0">
+					<tr bgcolor="black"> 
+						<td style="height:3; font-size:8" align="center"><font color="white"><b>SHIP FROM</b></font></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">Name: $!rtPUAddrName</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">Address: $!rtPUAddr1</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">City/State/Zip: $!rtPUCity, $!rtPUState  $!rtPUZip</td>
+					</tr>
+					
+					<tr> 
+					
+						<td style="font-size:8"> &nbsp; #if($!rtPUApptRequired == "true") Pickup Appt#: $!rtPUApptNum #end</td>
+					
+					</tr>
+					
+				</table>
+			</td>
+			<td border=".75">
+				<table cellpadding="0" cellspacing="0" border="0">
+					 
+					<tr> 
+						<td style="font-size:12"> <b>&nbsp; Bill of Lading Number:  <u>$!load.BolNum</u></b></td>
+					</tr>
+					<tr> 
+						<td style="font-size:12"><b>&nbsp; ALS Load Number: <u> $!load.LoadNum </b></u></td>
+					</tr>
+<tr> 
+						<td style="font-size:8">&nbsp; Shipment ID</td>
+					</tr>
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "SID")
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName =="SID")
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Customer Order Number: $!trailerRNs</td>
+
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Ref Numbers: $!trailerRNs</td>
+					</tr>
+					<tr> 
+						<td style="font-size:2">&nbsp;</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr valign="top"> 
+			<td>
+				<table border=".75" cellpadding="0" cellspacing="0">
+					<tr bgcolor="black"> 
+						<td style="font-size:8" align="center"><font color="white"><b>SHIP TO</b></font></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">Name: $rtDELAddrName</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:8">Address: $rtDELAddr1</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">City/State/Zip: $rtDELCity, $rtDELState  $rtDELZip</td>
+					</tr>
+					
+					<tr> 
+						<td style="font-size:8"> &nbsp; #if($!rtDELApptRequired == "true")<b>Delivery Appt</b>: #end #if($!rtDELApptDateTime or $!rtDELApptNum) $!rtDELApptNum $!rtDELApptDateTime  $!rtDELContName  $!rtDELContPhone #end</td>
+					</tr>  
+					
+					<tr bgcolor="black"> 
+						<td style="font-size:8" align="center"><font color="white"><b>THIRD PARTY FREIGHT CHARGES BILL TO:</b></font></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">Name: $!rtBillToName</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">Address: $!rtBillToAddr1 $!rtBillToAddr2</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">City/State/Zip: $!rtBillToCity, $!rtBillToState $!rtBillToZip</td>
+					</tr> 
+					<tr>
+						#if((!$rtDELApptDateTime || !$rtDELApptNum) && $rtDELApptRequired == "true")
+							<td style="font-size:8" rowspan="3">
+								<b>SPECIAL INSTRUCTIONS:</b> Please schedule appt with consignee, contact $!rtDELContPhone<br/>
+									#foreach($comment in $loadCommentList)
+										#foreach($q in $qualifierMap)
+											#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+												$comment.CommentValue<br/> 
+											#end
+										#end
+									#end 
+									$!acclist
+							</td>
+						#else
+							<td style="font-size:8" rowspan="3">
+								<b>SPECIAL INSTRUCTIONS:</b> 
+									#foreach($comment in $loadCommentList)
+										#foreach($q in $qualifierMap)
+											#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+												$comment.CommentValue<br/> 
+											#end
+										#end
+									#end 
+									$!acclist
+							</td>
+						#end
+					</tr>
+				</table>
+			</td>
+			<td border=".75">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:8" colspan="3"> <b>CARRIER: $!CarrierSCAC </b></td>
+					</tr>
+					<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "Trailer Number")
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName =="Trailer Number")
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8" colspan="3">Trailer Number: $!trailerRNs</td>
+					</tr>
+					<tr> 
+						#set($sealNum = 0)
+						#set($sealRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "Seal Number")
+												#set($sealNum = 1)
+											
+												#if($sealRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($sealRNs = $sealRNs + ", " + $singleRef)	
+												#else 
+													#set($sealRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($sealNum == 0)
+												#if($q.qualifierName =="Seal Number")
+													#if($sealRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($sealRNs = $sealRNs + ", " + $singleRef)
+													#else 
+														#set($sealRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8" colspan="3">Seal Number(s): $!sealRNs</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8" colspan="3"> <b>SCAC:  <u>$!rtTPCScac</u></b></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8" colspan="3"> <b>Pro Number:  <u> $!load.ProNum</u></b></td>
+					</tr>
+					<tr> 
+						<td style="font-size:8" colspan="3">   <b> Carrier Quote Number:  <u> $!loadTenderList[0].quoteReferenceNum  </u></b> </td>
+					</tr>
+					
+					#set($rtFreightTerms ="")
+					#set($rtLoadDivision = $!load.codeIdOwner)
+					
+					#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+						#if($ordHdr.codeIdOwner>0 && $rtLoadDivision > 0) 
+							#if($ordHdr.codeIdOwner == $rtLoadDivision)					
+								#set($rtFreightTerms = $ordHdr.dataValue_FreightTerms)
+							#end
+						#end
+					#end
+					
+					<tr> 
+						<td style="font-size:8" colspan="3"><hr width="100%"><b>Freight Charge Terms:</b><sup>(freight charges prepaid unless marked)</sup></td>
+					</tr> 
+					
+					#if($rtFreightTerms == "PPD")
+						<tr> 
+							<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party___[X]___</td>
+						</tr>
+					#elseif($rtFreightTerms == "COL")
+						<tr> 
+							<td style="font-size:8" colspan="3">Prepaid______  Collect_____  3rd Party___[X]___</td>
+						</tr>
+					#elseif($rtFreightTerms == "TP")
+						<tr> 
+							<td style="font-size:8" colspan="3">Prepaid______  Collect______  3rd Party__[X]___</td>
+						</tr>
+					#else
+						<tr> 
+							<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party___[X]___</td>
+						</tr>
+					#end
+					
+					<tr> 
+						<td style="font-size:8" align="right">___ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</td><td colspan="2"style="font-size:8" >Master Bill of Lading: with attached</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8" align="right"><sup>(check box)</sup> &nbsp; &nbsp; &nbsp;</td><td colspan="2" style="font-size:8" >underlying Bills of Lading</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+	<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+		<tr bgcolor="black">
+			<td style="font-size:8" align="center" colspan="12"><font color="white"><b>CUSTOMER ORDER INFORMATION</b></font></td>
+		</tr>
+		<tr>
+			<td colspan="3" style="font-size:8" align="center" >CUSTOMER ORDER NUMBER</td>
+			<td style="font-size:8" align="center" ># PLTS</td>
+			<td style="font-size:8" align="center" >WEIGHT</td>
+			<td colspan="9" style="font-size:8" align="center" >ADDITIONAL SHIPPER INFO</td>
+		</tr>
+
+		#if ($vw3g_OrdHeaderLoad_Template1List)
+			#set($ohCount = 0)
+			#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+				#set($ohCount = $ohCount + 1)
+				#set ($wtUOM = $ordHdr.wtUomDataValue_NetTot)
+				#if($ohCount < 25)
+				<tr>
+					<td colspan="3" style="font-size:8" align="center" >$!ordHdr.OrdNum</td>
+					<td style="font-size:8" align="center" >$!ordHdr.HandlingUnitCountTot</td>
+					<td style="font-size:8" align="center" >$!number.format("#0.00", $!ordHdr.Wt_NetTot) $!wtUOM</td>
+					<td colspan="9" style="font-size:8" align="center" >
+					#set($otherRNs = "")
+					#set($singleRef = "")
+					#foreach($refNum in $consolidatedRefNumViews)
+						#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+							#foreach($q in $qualifierMap) 
+								#if($refNum.qualifierId == $q.qualifierId)
+									#if($q.qualifierName == "Purchase Order Number" || $q.qualifierName =="Quote Number" || $q.qualifierName == "Pickup Number" || $q.qualifierName == "PO Number")
+										#if($otherRNs.length() > 0) 
+											#set($singleRef = $!q.description +":" +$!refNum.refNumValue)
+											#set($otherRNs = $otherRNs + ", " + $!singleRef)
+										#else 
+											#set($otherRNs = $!q.description +":"+ $!refNum.refNumValue)
+										#end
+									#end
+								#end 
+							#end
+						#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+							#foreach($q in $qualifierMap) 
+								#if($refNum.qualifierId == $q.qualifierId)
+									#if($q.qualifierName == "Shipper BOL")
+										#if($otherRNs.length()>0)
+											#set($singleRef = $!q.description +":" +$!refNum.refNumValue)
+											#set($otherRNs = $otherRNs + ", " + $singleRef)
+										#else 
+											#set($otherRNs = $!q.description +":"+$!refNum.refNumValue )
+										#end
+									#end
+								#end 
+							#end
+						#end
+					#end
+								
+					$!otherRNs
+					</td>
+				</tr>
+				#end 
+			#end
+		#end
+		<tr>
+			<td colspan="3" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td>
+			<td style="font-size:8" align="center" >$rtHULd</td>
+			<td style="font-size:8" align="center" >$rtWgtLd $!wtUOM</td>
+			<td style="font-size:8" align="center" colspan="7" bgcolor="gray">&nbsp;</td>
+		</tr>
+	</table>
+	<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+		<tr bgcolor="black">
+			<td style="font-size:8" align="center" colspan="16"><font color="white"><b>CARRIER INFORMATION</b></font></td>
+		</tr>
+		<tr>
+			<td style="font-size:8" align="center" colspan="4">HANDLING UNIT</td><td style="font-size:8" align="center" colspan="2">PACKAGE</td><td style="font-size:8" align="center" colspan="2">WEIGHT</td><td style="font-size:8" align="center" >H.M.<br>(x)</td><td colspan="5" style="font-size:8" align="center" >COMMODITY DESCRIPTION</td><td colspan="2" style="font-size:8" align="center">LTL ONLY</td>
+		</tr>
+		<tr>
+			<td style="font-size:8" align="center">QTY</td><td style="font-size:8" align="center">TYPE</td><td style="font-size:8" align="center" colspan="2">DIM</td><td style="font-size:8" align="center">QTY</td><td style="font-size:8" align="center">TYPE</td><td style="font-size:8" align="center" colspan="2" bgcolor="gray">&nbsp;</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td colspan="5" style="font-size:5" align="center" >Commodities requiring special or additional care or attention in handling or stowing must be<br />so marked and packaged as to ensure safe transportation with ordinary care.<br />See Section 2(e) of NMFC Item 360</td><td colspan="1" style="font-size:8" align="center">NMFC#</td><td style="font-size:8" align="center">CLASS</td>
+		</tr>
+		#if ($vw3g_HandlingUnitLine_Template1List)
+			#set($huLineCount = 0)
+			#foreach($commodity in $vw3g_HandlingUnitLine_Template1List)
+			#set($huLineCount = $huLineCount + 1)
+				#if($huLineCount < 25)
+		<tr>
+			<td style="font-size:8" align="center">$!commodity.HandlingUnitCountPlanned</td><td style="font-size:8" align="center">$!commodity.handlingUnitTypeName</td><td style="font-size:8" align="center" colspan="2">$!number.format("#0", $!commodity.dim_HandlingUnitLengthPlanned) x $!number.format("#0", $!commodity.dim_HandlingUnitWidthPlanned) x $!number.format("#0", $!commodity.dim_HandlingUnitHeightPlanned) ($!commodity.dimUomDataValue_HandlingUnitLengthPlanned)</td><td style="font-size:8" align="center">$!commodity.PieceCountPlanned</td><td style="font-size:8" align="center">$!commodity.handlingUnitTypeNamePiece</td><td style="font-size:8" align="center" colspan="2">$!number.format("#0.00", $!commodity.WeightGrossPlanned.Value) $!commodity.WeightGrossPlanned.Uom</td><td style="font-size:8" align="center">#if($commodity.isHazmatPlanned == "true") X #end</td>
+<td colspan="5" style="font-size:8" align="center">
+  #if($commodity.unClass) $!commodity.unClass, #end 
+  #if($commodity.DescriptionPlanned) $!commodity.DescriptionPlanned #end 
+  #if($commodity.HazmatClassification) ,$!commodity.HazmatClassification, #end 
+  #if($commodity.hazmatPackingGroup) $!commodity.hazmatPackingGroup #end  
+  #if($commodity.isHazmatPlanned && $commodity.hazmatContactNumber)
+    <br/>Emergency Contact: $!commodity.hazmatContactNumber
+  #end
+</td>
+
+
+<td colspan="1" style="font-size:8" align="center">$!commodity.nmfcCodePlanned</td><td style="font-size:8" align="center">$!commodity.dataValue_FreightClassPlanned</td>
+		</tr>
+				#end
+			#end
+		#end
+		<tr>
+			<td style="font-size:8" align="center">$rtHULd</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td style="font-size:8" align="center">$rtPcsLd</td><td style="font-size:8" align="center" bgcolor="gray"></td><td style="font-size:8" align="center" colspan="2">$rtWgtLd $!wtUOM</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td colspan="5" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td><td colspan="2" style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+		</tr>
+	</table>
+
+	<table cellspacing="0" cellpadding="0" style="font-family: arial">
+		<tr> 
+			<td border=".75">
+				<table border="0" cellpadding="0" cellspacing="0">
+					<tr> 
+						<td style="font-size:6">Where the rate is dependent on value, shippers are required to state specifically in writing the<br />agreed or declared value of the property as follows:</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">“The agreed or declared value of the property is specifically stated by the shipper to be not exceeding</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">____________ per ____________.</td>
+					</tr>
+				</table>
+			</td>
+			<td border="1.25">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:8" align="center"><b>COD Amount: $___________________</b></td>
+					</tr> 
+					<tr> 
+						<td style="font-size:8">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8" align="center">Fee Terms:    Collect:______    Prepaid:______</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8" align="center">Customer check acceptable:______</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td style="font-size:8" colspan="2" border=".75"><b>NOTE Liability Limitation for loss or damage in this shipment may be applicable. See 49 U.S.C. - 14706(c)(1)(A) and (B).</b></td>
+		</tr>
+		<tr> 
+			<td border=".75">
+				<table border="0" cellpadding="0" cellspacing="0">
+					<tr> 
+						<td style="font-size:6">RECEIVED, subject to individually determined rates or contracts that have been agreed upon in</td> 
+					</tr> 
+					<tr> 
+						<td style="font-size:6">writing between the carrier and shipper, if applicable, otherwise to the rates, classifications and</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:6">rules that have been established by the carrier and are available to the shipper, on request, and</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:6">to all applicable state and federal regulations.</td>
+					</tr>
+				</table>
+			</td>
+			<td border=".75">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:6">The carrier shall not make delivery of this shipment without payment of freight</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:6">and all other lawful charges.</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:8">_______________________________________<b>Shipper Signature</b></td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	<table cellspacing="0" cellpadding="0" style="font-family: arial">
+		<tr> 
+			<td border=".75" valign="top">
+				<table border="0" cellpadding="0" cellspacing="0">
+					<tr> 
+						<td style="font-size:8">SHIPPER SIGNATURE / DATE</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:6">This is to certify that the above named materials are properly<br />classified,packaged, marked and labeled, and are in proper</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:6">condition for transportation according to the applicable regulations</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">of the DOT.</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+				</table>
+			</td>
+			<td border=".75" valign="top">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:7" colspan="8">&nbsp;CONSIGNEE SIGNATURE</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:7" colspan="8">__________________________________________</td>
+					</tr>
+					<tr> 
+						<td style="font-size:7" colspan="8">&nbsp;PRINT NAME</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:7" colspan="8">__________________________________________</td>
+					</tr>
+					<tr> 
+						<td style="font-size:7" colspan="8">&nbsp;DATE</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+					</tr>
+					<tr> 
+						<td style="font-size:7" colspan="8">&nbsp;CHECK #</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+					</tr>				
+				</table>
+			</td>
+			<td border=".75" valign="top">
+				<table cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td style="font-size:8">CARRIER SIGNATURE / PICKUP DATE</td>
+					</tr> 
+					<tr> 
+						<td style="font-size:6">Carrier acknowledges receipt of packages and required placards.<br />Carrier certifies emergency response information was made</td> 
+					</tr>
+					<tr> 
+						<td style="font-size:6">available and/or carrier has the DOT emergency response<br />guidebook or equivalent documentation in the vehicle. Property</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">described above is received in good order, except as noted.</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+					<tr> 
+						<td style="font-size:6">&nbsp;</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+	#pageBreak()
+
+	<!-- *** Stop 2 and Greater *** -->
+
+	#if ($vw3g_Stop_Template1List)
+		#foreach($stop in $vw3g_Stop_Template1List)
+			#if($rtLoadType == "PD")
+				#if($stop.stopNum != "1" and $rtStopCount > 2)
+					#set($rtDELAddrName = $!stop.LocName)
+					#set($rtDELAddr1 = $!stop.Addr1)
+					#set($rtDELCity = $!stop.CityName)
+					#set($rtDELState = $!stop.StateCode)
+					#set($rtDELZip = $!stop.PostalCode)
+					#set($rtDELCountry = $!stop.CountryName)
+					#set($rtStopNum = $!stop.stopNum)
+					#set($rtDELApptNum = $!stop.appointmentNum)
+					#set($rtDELApptDateTime = $!stop.dateTime_Appointment)
+					#set($rtDELContName = $!stop.defaultContactName)
+					#set($rtDELContPhone = $!stop.defaultContactPhone1)
+					#set($rtDELApptRequired = $!stop.isAppointmentRequired)
+					#set($rtPUApptRequired = $!stop.isAppointmentRequired)
+				
+					<table cellspacing="0" cellpadding="0" style="font-family: arial">
+						<tr>
+							<td colspan="2">
+								<table border=".75" cellspacing="0">
+									<tr> 
+										<td  border="0"><b>Date: $!date.format('MM-dd-yyyy',$!date.toDate("yyyy-MM-dd'T'HH:mm:ss.SSS",$stop.schedDateTimeExpectedArrival))</b></td><td align="center" border="0" style="font-size:12"><b>BILL OF LADING - $stop.DataValue_StopType STOP - $stop.stopNum</b></td><td align="right"  border="0"><b>Page $rtStopNum</b></td> 
+									</tr> 
+								</table>
+							</td>
+						</tr>
+						<tr> 
+							<td>
+								<table border=".75" cellpadding="0" cellspacing="0">
+									<tr bgcolor="black"> 
+										<td style="height:3; font-size:8" align="center"><font color="white"><b>SHIP FROM</b></font></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">Name: $!rtPUAddrName</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">Address: $!rtPUAddr1</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">City/State/Zip: $!rtPUCity, $!rtPUState  $!rtPUZip</td>
+									</tr>
+									
+									<tr> 
+									
+										<td style="font-size:8"> &nbsp; #if($!rtPUApptRequired != "") Pickup Appt#: $!rtPUApptNum #end</td>
+									
+									</tr>
+									
+								</table>
+							</td>
+							<td border=".75">
+				<table cellpadding="0" cellspacing="0" border="0">
+					 
+					<tr> 
+						<td style="font-size:12"> <b>&nbsp; Bill of Lading Number:  <u>$!load.BolNum</u></b></td>
+					</tr>
+					<tr> 
+						<td style="font-size:12"><b>&nbsp; ALS Load Number: <u> $!load.LoadNum </b></u></td>
+					</tr>
+<tr> 
+						<td style="font-size:8">&nbsp; Shipment ID</td>
+					</tr>
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "SID")
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName =="SID")
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Customer Order Number: $!trailerRNs</td>
+
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Ref Numbers: $!trailerRNs</td>
+					</tr>
+					<tr> 
+						<td style="font-size:2">&nbsp;</td>
+					</tr>
+				</table>
+							</td>
+						</tr>
+						<tr valign="top"> 
+							<td>
+								<table border=".75" cellpadding="0" cellspacing="0">
+									<tr bgcolor="black"> 
+										<td style="font-size:8" align="center"><font color="white"><b>SHIP TO</b></font></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">Name: $rtDELAddrName</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">Address: $rtDELAddr1</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">City/State/Zip: $rtDELCity, $rtDELState  $rtDELZip</td>
+									</tr>
+									
+									<tr> 
+										<td style="font-size:8"> &nbsp; #if($!destApptRequired == "true") <b>Delivery Appt:</b>  #end #if($!rtDELApptDateTime or $!rtDELApptNum) $!rtDELApptNum $!rtDELApptDateTime  $!rtDELContName  $!rtDELContPhone #end</td>
+									</tr>  
+									
+									<tr bgcolor="black"> 
+										<td style="font-size:8" align="center"><font color="white"><b>THIRD PARTY FREIGHT CHARGES BILL TO:</b></font></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">Name: $!rtBillToName</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">Address: $!rtBillToAddr1 $!rtBillToAddr2</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">City/State/Zip: $!rtBillToCity, $!rtBillToState $!rtBillToZip</td>
+									</tr> 
+									<tr> 
+										#if((!$rtDELApptDateTime || !$rtDELApptNum) && $rtDELApptRequired == "true")
+											<td style="font-size:8" rowspan="3">
+												<b>SPECIAL INSTRUCTIONS:</b> Please schedule appt with consignee, contact $!rtDELContPhone<br/>
+													#foreach($comment in $loadCommentList)
+														#foreach($q in $qualifierMap)
+															#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+																$comment.CommentValue<br/> 
+															#end
+														#end
+													#end
+													$!acclist
+											</td>
+										#else
+											<td style="font-size:8" rowspan="3">
+												<b>SPECIAL INSTRUCTIONS: </b>
+													#foreach($comment in $loadCommentList)
+														#foreach($q in $qualifierMap)
+															#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+																$comment.CommentValue<br/> 
+															#end
+														#end
+													#end
+													$!acclist
+											</td>
+										#end
+									</tr>
+								</table>
+							</td>
+							<td border=".75">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:8" colspan="3"> <b>CARRIER: $CarrierSCAC</b></td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" colspan="3">Trailer number:</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" colspan="3">Seal number(s):</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" colspan="3"> <b>SCAC:  <u>$!rtTPCScac</u></b></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8" colspan="3"> <b>Pro Number:  <u> $!load.ProNum</u></b></td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" colspan="3">  <b> Carrier Quote Number:  <u> $!loadTenderList[0].quoteReferenceNum  </u></b> </td>
+									</tr>
+								
+									
+									#set($rtFreightTerms ="")
+									#set($rtLoadDivision = $!load.codeIdOwner)
+									
+									#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+										#if($ordHdr.codeIdOwner>0 && $rtLoadDivision > 0) 
+											#if($ordHdr.codeIdOwner == $rtLoadDivision)					
+												#set($rtFreightTerms = $ordHdr.dataValue_FreightTerms)
+											#end
+										#end
+									#end
+							
+									<tr> 
+										<td style="font-size:8" colspan="3"><hr width="100%"><b>Freight Charge Terms:</b><sup>(freight charges prepaid unless marked)</sup></td>
+									</tr> 
+									
+									#if($rtFreightTerms == "PPD")
+										<tr> 
+											<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party___[X]___</td>
+										</tr>
+									#elseif($rtFreightTerms == "COL")
+										<tr> 
+											<td style="font-size:8" colspan="3">Prepaid______  Collect_____  3rd Party__[X]____</td>
+										</tr>
+									#elseif($rtFreightTerms == "TP")
+										<tr> 
+											<td style="font-size:8" colspan="3">Prepaid______  Collect______  3rd Party__[X]___</td>
+										</tr>
+									#else
+										<tr> 
+											<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party___[X]___</td>
+										</tr>
+									#end
+									
+									<tr> 
+										<td style="font-size:8" align="right">___ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</td><td colspan="2"style="font-size:8" >Master Bill of Lading: with attached</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8" align="right"><sup>(check box)</sup> &nbsp; &nbsp; &nbsp;</td><td colspan="2" style="font-size:8" >underlying Bills of Lading</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+					<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+						<tr bgcolor="black">
+							<td style="font-size:8" align="center" colspan="12"><font color="white"><b>CUSTOMER ORDER INFORMATION</b></font></td>
+						</tr>
+						<tr>
+							<td colspan="3" style="font-size:8" align="center" >CUSTOMER ORDER NUMBER</td>
+							<td style="font-size:8" align="center" ># PKGS</td>
+							<td style="font-size:8" align="center" >WEIGHT</td>
+							<td colspan="9" style="font-size:8" align="center" >ADDITIONAL SHIPPER INFO</td>
+						</tr>
+						#if ($vw3g_OrdHeaderLoad_Template1List)
+							#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+
+								#if($stop.StopNum == $ordHdr.OrdStopNumDest)
+									
+		
+						<tr>
+							<td colspan="3" style="font-size:8" align="center" >$!ordHdr.OrdNum</td>
+							<td style="font-size:8" align="center" >$!ordHdr.HandlingUnitCountTot</td>
+							<td style="font-size:8" align="center" >$!number.format("#0.00", $!ordHdr.Wt_NetTot) $!wtUOM
+							</td>
+							<td colspan="7" style="font-size:8" align="center" >	
+							#set($otherRNs = "")
+							#set($singleRef = "")
+		#foreach($refNum in $consolidatedRefNumViews)
+			#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+				#foreach($q in $qualifierMap) 
+					#if($refNum.qualifierId == $q.qualifierId)
+						#if($q.qualifierName == "Purchase Order Number" || $q.qualifierName =="Quote Number" || $q.qualifierName == "Pickup Number" || $q.qualifierName == "PO Number")
+					
+							#if($otherRNs.length() > 0) 
+								#set($singleRef = $!q.description +":"+$!refNum.refNumValue)
+								#set($otherRNs = $otherRNs + ", " + $!singleRef)
+							#else 
+								#set($otherRNs = $!q.description +":"+$!refNum.refNumValue)
+							#end
+						#end
+						<!--
+						$!q.description:&nbsp;$!refNum.refNumValue <br/>
+						-->
+					#end 
+				#end
+			#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+				#foreach($q in $qualifierMap) 
+					#if($refNum.qualifierId == $q.qualifierId)
+						#if($q.qualifierName == "Shipper BOL")
+							#if($otherRNs.length()>0)
+								#set($singleRef = $!q.description +":" +$!refNum.refNumValue)
+								#set($otherRNs = $otherRNs + ", " + $singleRef)
+							#else 
+								#set($otherRNs = $!q.description +":"+$!refNum.refNumValue )
+							#end
+						#end
+					#end 
+				#end
+			#end 
+		#end 
+							
+						
+							$!otherRNs
+					
+							</td>
+						</tr>
+								#end
+							#end
+						#end
+						<tr>
+							<td colspan="3" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td>
+							<td style="font-size:8" align="center" >$!stop.handlingUnitCountTotPlanned</td>
+							<td style="font-size:8" align="center" >$!number.format("#0.00", $!stop.wtBase_NetTotPlanned) $!wtUOM
+							</td>
+							<td style="font-size:8" align="center" colspan="7" bgcolor="gray">&nbsp;</td>
+						</tr>
+					</table>
+					<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+						<tr bgcolor="black">
+							<td style="font-size:8" align="center" colspan="16"><font color="white"><b>CARRIER INFORMATION</b></font></td>
+						</tr>
+						<tr>
+							<td style="font-size:8" align="center" colspan="4">HANDLING UNIT</td><td style="font-size:8" align="center" colspan="2">PACKAGE</td><td style="font-size:8" align="center" colspan="2">WEIGHT</td><td style="font-size:8" align="center" >H.M.<br>(x)</td><td colspan="5" style="font-size:8" align="center" >COMMODITY DESCRIPTION</td><td colspan="2" style="font-size:8" align="center">LTL ONLY</td>
+						</tr>
+						<tr>
+							<td style="font-size:8" align="center">QTY</td><td style="font-size:8" align="center">TYPE</td><td style="font-size:8" align="center" colspan="2">DIM</td><td style="font-size:8" align="center">QTY</td><td style="font-size:8" align="center">TYPE</td><td style="font-size:8" align="center" colspan="2" bgcolor="gray">&nbsp;</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td colspan="5" style="font-size:5" align="center" >Commodities requiring special or additional care or attention in handling or stowing must be<br />so marked and packaged as to ensure safe transportation with ordinary care.<br />See Section 2(e) of NMFC Item 360</td><td colspan="1" style="font-size:8" align="center">NMFC#</td><td style="font-size:8" align="center">CLASS</td>
+						</tr>
+						#if ($vw3g_HandlingUnitLine_Template1List)
+							##foreach($commodity in $vw3g_HandlingUnitLine_Template1List)
+							
+							#foreach($commodity in $vw3g_HandlingUnitLine_Template1List)
+								#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+									#if($stop.StopNum == $ordHdr.OrdStopNumDest)
+										#if($commodity.OrdNum == $ordHdr.OrdNum)
+							
+						<tr>
+							<td style="font-size:8" align="center">$!commodity.HandlingUnitCountPlanned</td><td style="font-size:8" align="center">$!commodity.handlingUnitTypeName</td><td style="font-size:8" align="center" colspan="2">$!number.format("#0", $!commodity.dim_HandlingUnitLengthPlanned) x $!number.format("#0", $!commodity.dim_HandlingUnitWidthPlanned) x $!number.format("#0", $!commodity.dim_HandlingUnitHeightPlanned) ($!commodity.dimUomDataValue_HandlingUnitLengthPlanned)</td><td style="font-size:8" align="center">$!commodity.PieceCountPlanned</td>
+<td style="font-size:8" align="center">$!commodity.handlingUnitTypeNamePiece</td>
+<td style="font-size:8" align="center" colspan="2">$!number.format("#0.00", $!commodity.WeightGrossPlanned.Value) $!commodity.WeightGrossPlanned.Uom</td>
+<td style="font-size:8" align="center">#if($commodity.isHazmatPlanned == "true") X #end</td>
+<td colspan="5" style="font-size:8" align="center">
+  #if($commodity.unClass) $!commodity.unClass, #end 
+  #if($commodity.DescriptionPlanned) $!commodity.DescriptionPlanned #end 
+  #if($commodity.HazmatClassification) ,$!commodity.HazmatClassification, #end 
+  #if($commodity.hazmatPackingGroup) $!commodity.hazmatPackingGroup #end  
+  #if($commodity.isHazmatPlanned && $commodity.hazmatContactNumber)
+    <br/>Emergency Contact: $!commodity.hazmatContactNumber
+  #end
+</td>
+
+<td colspan="1" style="font-size:8" align="center">$!commodity.nmfcCodePlanned</td>
+<td style="font-size:8" align="center">$!commodity.dataValue_FreightClassPlanned</td>
+						</tr>
+										#end
+									#end
+								#end
+							#end
+						#end
+						<tr>
+							<td style="font-size:8" align="center">$!stop.handlingUnitCountTotPlanned</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td style="font-size:8" align="center">$!stop.pieceCountTotPlanned</td><td style="font-size:8" align="center" bgcolor="gray"></td><td style="font-size:8" align="center" colspan="2">$!number.format("#0.00", $!stop.wtBase_NetTotPlanned) $!wtUOM
+							</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td colspan="4" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td><td colspan="2" style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+						</tr>
+					</table>
+
+					<table cellspacing="0" cellpadding="0" style="font-family: arial">
+						<tr> 
+							<td border=".75">
+								<table border="0" cellpadding="0" cellspacing="0">
+									<tr> 
+										<td style="font-size:6">Where the rate is dependent on value, shippers are required to state specifically in writing the<br />agreed or declared value of the property as follows:</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">“The agreed or declared value of the property is specifically stated by the shipper to be not exceeding</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">____________ per ____________.</td>
+									</tr>
+								</table>
+							</td>
+							<td border="1.25">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:8" align="center"><b>COD Amount: $___________________</b></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" align="center">Fee Terms:    Collect:______    Prepaid:______</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" align="center">Customer check acceptable:______</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+						<tr>
+							<td style="font-size:8" colspan="2" border=".75"><b>NOTE Liability Limitation for loss or damage in this shipment may be applicable. See 49 U.S.C. - 14706(c)(1)(A) and (B).</b></td>
+						</tr>
+						<tr> 
+							<td border=".75">
+								<table border="0" cellpadding="0" cellspacing="0">
+									<tr> 
+										<td style="font-size:6">RECEIVED, subject to individually determined rates or contracts that have been agreed upon in</td> 
+									</tr> 
+									<tr> 
+										<td style="font-size:6">writing between the carrier and shipper, if applicable, otherwise to the rates, classifications and</td> 
+									</tr>
+									<tr> 
+										<td style="font-size:6">rules that have been established by the carrier and are available to the shipper, on request, and</td> 
+									</tr>
+									<tr> 
+										<td style="font-size:6">to all applicable state and federal regulations.</td>
+									</tr>
+								</table>
+							</td>
+							<td border=".75">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:6">The carrier shall not make delivery of this shipment without payment of freight</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:6">and all other lawful charges.</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">_______________________________________<b>Shipper Signature</b></td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+
+					<table cellspacing="0" cellpadding="0" style="font-family: arial">
+						<tr> 
+							<td border=".75" valign="top">
+								<table border="0" cellpadding="0" cellspacing="0">
+									<tr> 
+										<td style="font-size:8">SHIPPER SIGNATURE / DATE</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:6">This is to certify that the above named materials are properly<br />classified,packaged, marked and labeled, and are in proper</td> 
+									</tr>
+									<tr> 
+										<td style="font-size:6">condition for transportation according to the applicable regulations</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">of the DOT.</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+							<td border=".75" valign="top">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:7" colspan="8">&nbsp;CONSIGNEE SIGNATURE</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:7" colspan="8">__________________________________________</td>
+									</tr>
+									<tr> 
+										<td style="font-size:7" colspan="8">&nbsp;PRINT NAME</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:7" colspan="8">__________________________________________</td>
+									</tr>
+									<tr> 
+										<td style="font-size:7" colspan="8">&nbsp;DATE</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+									</tr>
+									<tr> 
+										<td style="font-size:7" colspan="8">&nbsp;CHECK #</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+									</tr>				
+								</table>
+							</td>
+							<td border=".75" valign="top">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:8">CARRIER SIGNATURE / PICKUP DATE</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:6">Carrier acknowledges receipt of packages and required placards.<br />Carrier certifies emergency response information was made</td> 
+									</tr>
+									<tr> 
+										<td style="font-size:6">available and/or carrier has the DOT emergency response<br />guidebook or equivalent documentation in the vehicle. Property</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">described above is received in good order, except as noted.</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+	#pageBreak()
+				
+				#end
+			#else
+				#if($stop.stopNum != $rtStopCount and $rtStopCount > 2)
+					#set($rtPUAddrName = $!stop.LocName)
+					#set($rtPUAddr1 = $!stop.Addr1)
+					#set($rtPUCity = $!stop.CityName)
+					#set($rtPUState = $!stop.StateCode)
+					#set($rtPUZip = $!stop.PostalCode)
+					#set($rtPUCountry = $!stop.CountryName)
+					#set($rtStopNum = $!stop.stopNum)
+					#set($rtPageNum = $!stop.stopNum + 1)
+					#set($rtPUApptRequired = $!stop.isAppointmentRequired)
+				
+					<table cellspacing="0" cellpadding="0" style="font-family: arial">
+						<tr>
+							<td colspan="2">
+								<table border=".75" cellspacing="0">
+									<tr> 
+										<td  border="0"><b>Date: $!date.format('MM-dd-yyyy',$!date.toDate("yyyy-MM-dd'T'HH:mm:ss.SSS",$stop.schedDateTimeExpectedArrival))</b></td><td align="center" border="0" style="font-size:12"><b>BILL OF LADING - $stop.DataValue_StopType STOP - $stop.stopNum</b></td><td align="right"  border="0"><b>Page $rtPageNum</b></td> 
+									</tr> 
+								</table>
+							</td>
+						</tr>
+						<tr> 
+							<td>
+								<table border=".75" cellpadding="0" cellspacing="0">
+									<tr bgcolor="black"> 
+										<td style="height:3; font-size:8" align="center"><font color="white"><b>SHIP FROM</b></font></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">Name: $!rtPUAddrName</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">Address: $!rtPUAddr1</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">City/State/Zip: $!rtPUCity, $!rtPUState  $!rtPUZip</td>
+									</tr>
+									
+									<tr> 
+									
+										<td style="font-size:8"> &nbsp; #if($!rtPUApptRequired != "") Pickup Appt#: $!rtPUApptNum #end</td>
+									
+									</tr>
+									
+								</table>
+							</td>
+							<td border=".75">
+				<table cellpadding="0" cellspacing="0" border="0">
+					 
+					<tr> 
+						<td style="font-size:12"> <b>&nbsp; Bill of Lading Number:  <u>$!load.BolNum</u></b></td>
+					</tr>
+					<tr> 
+						<td style="font-size:12"><b>&nbsp; ALS Load Number: <u> $!load.LoadNum </b></u></td>
+					</tr>
+<tr> 
+						<td style="font-size:8">&nbsp; Shipment ID</td>
+					</tr>
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "SID")
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName =="SID")
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Customer Order Number: $!trailerRNs</td>
+
+<tr> 
+						#set($trailerNum = 0)
+						#set($trailerRNs = "")
+						#set($singleRef = "")
+						#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+							#foreach($refNum in $consolidatedRefNumViews)
+								#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+												#set($trailerNum = 1)
+											
+												#if($trailerRNs.length()>0)
+													#set($singleRef = $!refNum.refNumValue)
+													#set($trailerRNs = $trailerRNs + ", " + $singleRef)	
+												#else 
+													#set($trailerRNs = $!refNum.refNumValue )
+												#end
+											#end
+										#end 
+									#end
+								#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+									#foreach($q in $qualifierMap) 
+										#if($refNum.qualifierId == $q.qualifierId)
+											#if($trailerNum == 0)
+												#if($q.qualifierName == "REF" || $q.qualifierName =="PO#" || $q.qualifierName == "SID" || $q.qualifierName == "RUN" || $q.qualifierName == "PU#" || $q.qualifierName == "RA#" || $q.qualifierName == "PTA" || $q.qualifierName == "ROUTE ID" )
+													#if($trailerRNs.length()>0)
+														#set($singleRef = $!refNum.refNumValue)
+														#set($trailerRNs = $trailerRNs + ", " + $singleRef)
+													#else 
+														#set($trailerRNs = $!refNum.refNumValue )
+													#end
+												#end
+											#end	
+										#end 
+									#end
+								#end 
+							#end
+						#end
+						<td style="font-size:8">&nbsp; Ref Numbers: $!trailerRNs</td>
+					</tr>
+					<tr> 
+						<td style="font-size:2">&nbsp;</td>
+					</tr>
+				</table>
+							</td>
+						</tr>
+						<tr valign="top"> 
+							<td>
+								<table border=".75" cellpadding="0" cellspacing="0">
+									<tr bgcolor="black"> 
+										<td style="font-size:8" align="center"><font color="white"><b>SHIP TO</b></font></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">Name: $rtDELAddrName</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">Address: $rtDELAddr1</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">City/State/Zip: $rtDELCity, $rtDELState  $rtDELZip</td>
+									</tr>
+									
+									<tr> 
+										<td style="font-size:8"> &nbsp; #if($!rtDELApptRequired == "true") <b>Delivery Appt:</b> #end #if($!rtDELApptDateTime or $!rtDELApptNum) $!rtDELApptNum $!rtDELApptDateTime  $!rtDELContName  $!rtDELContPhone #end</td>
+									</tr>  
+									
+									<tr bgcolor="black"> 
+										<td style="font-size:8" align="center"><font color="white"><b>THIRD PARTY FREIGHT CHARGES BILL TO:</b></font></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">Name: $!rtBillToName</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">Address: $!rtBillToAddr1 $!rtBillToAddr2</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">City/State/Zip: $!rtBillToCity, $!rtBillToState $!rtBillToZip</td>
+									</tr> 
+									<tr> 
+										#if((!$rtDELApptDateTime || !$rtDELApptNum) && $rtDELApptRequired == "true")
+											<td style="font-size:8" rowspan="3">
+												<b>SPECIAL INSTRUCTIONS:</b> Please schedule appt with consignee, contact $!rtDELContPhone<br/>
+													#foreach($comment in $loadCommentList)
+														#foreach($q in $qualifierMap)
+															#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+																$comment.CommentValue<br/> 
+															#end
+														#end
+													#end
+													$!acclist
+											</td>
+										#else
+											<td style="font-size:8" rowspan="3">
+												<b>SPECIAL INSTRUCTIONS: </b>
+													#foreach($comment in $loadCommentList)
+														#foreach($q in $qualifierMap)
+															#if($q.qualifierName != 'InternalComment' && $q.qualifierId == $comment.qualifierId)									
+																$comment.CommentValue<br/> 
+															#end
+														#end
+													#end
+													$!acclist
+											</td>
+										#end
+									</tr>
+								</table>
+							</td>
+							<td border=".75">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:8" colspan="3"> <b>CARRIER: $CarrierSCAC</b></td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" colspan="3">Trailer number:</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" colspan="3">Seal number(s):</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" colspan="3"> <b>SCAC:  <u>$!rtTPCScac</u></b></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8" colspan="3"> <b>Pro Number:  <u> $!load.ProNum</u></b></td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" colspan="3">  <b> Carrier Quote Number:  <u> $!loadTenderList[0].quoteReferenceNum  </u></b> </td>
+									</tr>
+									
+									
+									#set($rtLoadDivision = $!load.tradingPartnerIdDivision)
+									#set($rtFreightTerms = "")
+									
+									#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+										#if($ordHdr.tradingPartnerIdDivision>0 && $ordHdr.tradingPartnerIdDivision>0) 
+											#if($ordHdr.tradingPartnerIdDivision == $rtLoadDivision)					
+												#set($rtFreightTerms = $ordHdr.dataValue_FreightTerms)
+											#end
+										#end
+									#end
+							
+									<tr> 
+										<td style="font-size:8" colspan="3"><hr width="100%"><b>Freight Charge Terms:</b><sup>(freight charges prepaid unless marked)</sup></td>
+									</tr> 
+									
+									#if($rtFreightTerms == "PPD")
+										<tr> 
+											<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party__[X]____</td>
+										</tr>
+									#elseif($rtFreightTerms == "COL")
+										<tr> 
+											<td style="font-size:8" colspan="3">Prepaid______  Collect_____  3rd Party___[X]___</td>
+										</tr>
+									#elseif($rtFreightTerms == "TP")
+										<tr> 
+											<td style="font-size:8" colspan="3">Prepaid______  Collect______  3rd Party__[X]___</td>
+										</tr>
+									#else
+										<tr> 
+											<td style="font-size:8" colspan="3">Prepaid____  Collect______  3rd Party___[X]___</td>
+										</tr>
+									#end
+									
+									<tr> 
+										<td style="font-size:8" align="right">___ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</td><td colspan="2"style="font-size:8" >Master Bill of Lading: with attached</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8" align="right"><sup>(check box)</sup> &nbsp; &nbsp; &nbsp;</td><td colspan="2" style="font-size:8" >underlying Bills of Lading</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+					<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+						<tr bgcolor="black">
+							<td style="font-size:8" align="center" colspan="12"><font color="white"><b>CUSTOMER ORDER INFORMATION</b></font></td>
+						</tr>
+						<tr>
+							<td colspan="3" style="font-size:8" align="center" >CUSTOMER ORDER NUMBER</td>
+							<td style="font-size:8" align="center" ># PKGS</td>
+							<td style="font-size:8" align="center" >WEIGHT</td>
+							<td colspan="9" style="font-size:8" align="center" >ADDITIONAL SHIPPER INFO</td>
+						</tr>
+
+						#if ($vw3g_OrdHeaderLoad_Template1List)
+							#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+								#if($stop.StopNum == $ordHdr.OrdStopNumOrig)
+								
+							
+						<tr>
+							<td colspan="3" style="font-size:8" align="center" >$!ordHdr.OrdNum</td>
+							<td style="font-size:8" align="center" >$!ordHdr.HandlingUnitCountTot</td>
+							<td style="font-size:8" align="center" >$!number.format("#0.00", $!ordHdr.Wt_NetTot) $!wtUOM</td>
+							<td colspan="7" style="font-size:8" align="center" >
+							#set($otherRNs = "")
+							#set($singleRef = "")
+		#foreach($refNum in $consolidatedRefNumViews)
+			#if($ordHdr.loadId == $refNum.loadId && $load.loadNum == $refNum.entityNumOwnedBy)		
+				#foreach($q in $qualifierMap) 
+					#if($refNum.qualifierId == $q.qualifierId)
+						#if($q.qualifierName == "Purchase Order Number" || $q.qualifierName =="Quote Number" || $q.qualifierName == "Pickup Number" || $q.qualifierName == "PO Number")
+					
+							#if($otherRNs.length() > 0) 
+								#set($singleRef = $!q.description +":" +$!refNum.refNumValue)
+								#set($otherRNs = $otherRNs + ", " + $!singleRef)
+							#else 
+								#set($otherRNs = $!q.description +":"+ $!refNum.refNumValue)
+							#end
+						#end
+					#end 
+				#end
+			#elseif($ordHdr.loadId == $refNum.loadId && $ordHdr.ordNum == $refNum.entityNumOwnedBy)
+				#foreach($q in $qualifierMap) 
+					#if($refNum.qualifierId == $q.qualifierId)
+						#if($q.qualifierName == "Shipper BOL")
+							#if($otherRNs.length()>0)
+								#set($singleRef = $!q.description +":" +$!refNum.refNumValue)
+								#set($otherRNs = $otherRNs + ", " + $singleRef)
+							#else 
+								#set($otherRNs = $!q.description +":"+$!refNum.refNumValue )
+							#end
+						#end
+					#end 
+				#end
+			#end
+		#end 
+							
+							
+							$!otherRNs
+						
+							</td>
+						</tr>
+								#end
+							#end
+						#end
+						<tr>
+							<td colspan="3" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td>
+							<td style="font-size:8" align="center" >$!stop.handlingUnitCountTotPlanned</td>
+							<td style="font-size:8" align="center" >$!number.format("#0.00", $!stop.wtBase_NetTotPlanned) $!wtUOM
+							</td>
+							<td style="font-size:8" align="center" colspan="7" bgcolor="gray">&nbsp;</td>
+						</tr>
+					</table>
+					<table cellspacing="0" cellpadding="0" border="1" style="font-family: arial">
+						<tr bgcolor="black">
+							<td style="font-size:8" align="center" colspan="16"><font color="white"><b>CARRIER INFORMATION</b></font></td>
+						</tr>
+						<tr>
+							<td style="font-size:8" align="center" colspan="2">HANDLING UNIT</td><td style="font-size:8" align="center" colspan="2">PACKAGE</td><td style="font-size:8" align="center" colspan="2">WEIGHT</td><td style="font-size:8" align="center" >H.M.<br>(x)</td><td colspan="6" style="font-size:8" align="center" >COMMODITY DESCRIPTION</td><td colspan="3" style="font-size:8" align="center">LTL ONLY</td>
+						</tr>
+						<tr>
+							<td style="font-size:8" align="center">QTY</td><td style="font-size:8" align="center">TYPE</td><td style="font-size:8" align="center">QTY</td><td style="font-size:8" align="center">TYPE</td><td style="font-size:8" align="center" colspan="2" bgcolor="gray">&nbsp;</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td colspan="6" style="font-size:5" align="center" >Commodities requiring special or additional care or attention in handling or stowing must be<br />so marked and packaged as to ensure safe transportation with ordinary care.<br />See Section 2(e) of NMFC Item 360</td><td colspan="2" style="font-size:8" align="center">NMFC#</td><td style="font-size:8" align="center">CLASS</td>
+						</tr>
+						#if ($vw3g_HandlingUnitLine_Template1List)
+							##foreach($commodity in $vw3g_HandlingUnitLine_Template1List)
+							
+							#foreach($commodity in $vw3g_HandlingUnitLine_Template1List)
+								#foreach($ordHdr in $vw3g_OrdHeaderLoad_Template1List)
+									#if($stop.StopNum == $ordHdr.OrdStopNumOrig)
+										#if($commodity.OrdNum == $ordHdr.OrdNum)
+							
+						<tr>
+							<td style="font-size:8" align="center">$!commodity.HandlingUnitCountPlanned</td><td style="font-size:8" align="center">$!commodity.handlingUnitTypeName</td><td style="font-size:8" align="center">$!commodity.PieceCountPlanned</td><td style="font-size:8" align="center">$!commodity.handlingUnitTypeNamePiece</td><td style="font-size:8" align="center" colspan="2">$!number.format("#0.00", $!commodity.WeightGrossPlanned.Value) $!wtUOM</td>
+							<td style="font-size:8" align="center">#if($commodity.isHazmatPlanned == "true") X #end</td>
+<td colspan="5" style="font-size:8" align="center">
+  #if($commodity.unClass) $!commodity.unClass, #end 
+  #if($commodity.DescriptionPlanned) $!commodity.DescriptionPlanned #end 
+  #if($commodity.HazmatClassification) ,$!commodity.HazmatClassification, #end 
+  #if($commodity.hazmatPackingGroup) $!commodity.hazmatPackingGroup #end  
+  #if($commodity.isHazmatPlanned && $commodity.hazmatContactNumber)
+    <br/>Emergency Contact: $!commodity.hazmatContactNumber
+  #end
+</td>
+
+
+<td colspan="2" style="font-size:8" align="center">$!commodity.nmfcCodePlanned</td>
+<td style="font-size:8" align="center">$!commodity.dataValue_FreightClassPlanned</td>
+						</tr>
+										#end
+									#end
+								#end
+							#end
+						#end
+						<tr>
+							<td style="font-size:8" align="center">$!stop.handlingUnitCountTotPlanned</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td style="font-size:8" align="center">$!stop.pieceCountTotPlanned</td><td style="font-size:8" align="center" bgcolor="gray"></td><td style="font-size:8" align="center" colspan="2">$!number.format("#0.00", $!stop.wtBase_NetTotPlanned) $!wtUOM
+							</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td colspan="6" style="font-size:8" align="center" ><b>GRAND TOTAL</b></td><td colspan="2" style="font-size:8" align="center" bgcolor="gray">&nbsp;</td><td style="font-size:8" align="center" bgcolor="gray">&nbsp;</td>
+						</tr>
+					</table>
+
+					<table cellspacing="0" cellpadding="0" style="font-family: arial">
+						<tr> 
+							<td border=".75">
+								<table border="0" cellpadding="0" cellspacing="0">
+									<tr> 
+										<td style="font-size:6">Where the rate is dependent on value, shippers are required to state specifically in writing the<br />agreed or declared value of the property as follows:</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">“The agreed or declared value of the property is specifically stated by the shipper to be not exceeding</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">____________ per ____________.</td>
+									</tr>
+								</table>
+							</td>
+							<td border="1.25">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:8" align="center"><b>COD Amount: $___________________</b></td>
+									</tr> 
+									<tr> 
+										<td style="font-size:8">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" align="center">Fee Terms:    Collect:______    Prepaid:______</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8" align="center">Customer check acceptable:______</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+						<tr>
+							<td style="font-size:8" colspan="2" border=".75"><b>NOTE Liability Limitation for loss or damage in this shipment may be applicable. See 49 U.S.C. - 14706(c)(1)(A) and (B).</b></td>
+						</tr>
+						<tr> 
+							<td border=".75">
+								<table border="0" cellpadding="0" cellspacing="0">
+									<tr> 
+										<td style="font-size:6">RECEIVED, subject to individually determined rates or contracts that have been agreed upon in</td> 
+									</tr> 
+									<tr> 
+										<td style="font-size:6">writing between the carrier and shipper, if applicable, otherwise to the rates, classifications and</td> 
+									</tr>
+									<tr> 
+										<td style="font-size:6">rules that have been established by the carrier and are available to the shipper, on request, and</td> 
+									</tr>
+									<tr> 
+										<td style="font-size:6">to all applicable state and federal regulations.</td>
+									</tr>
+								</table>
+							</td>
+							<td border=".75">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:6">The carrier shall not make delivery of this shipment without payment of freight</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:6">and all other lawful charges.</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:8">_______________________________________<b>Shipper Signature</b></td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+
+					<table cellspacing="0" cellpadding="0" style="font-family: arial">
+						<tr> 
+							<td border=".75" valign="top">
+								<table border="0" cellpadding="0" cellspacing="0">
+									<tr> 
+										<td style="font-size:8">SHIPPER SIGNATURE / DATE</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:6">This is to certify that the above named materials are properly<br />classified,packaged, marked and labeled, and are in proper</td> 
+									</tr>
+									<tr> 
+										<td style="font-size:6">condition for transportation according to the applicable regulations</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">of the DOT.</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+							<td border=".75" valign="top">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:7" colspan="8">&nbsp;CONSIGNEE SIGNATURE</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:7" colspan="8">__________________________________________</td>
+									</tr>
+									<tr> 
+										<td style="font-size:7" colspan="8">&nbsp;PRINT NAME</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:7" colspan="8">__________________________________________</td>
+									</tr>
+									<tr> 
+										<td style="font-size:7" colspan="8">&nbsp;DATE</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+									</tr>
+									<tr> 
+										<td style="font-size:7" colspan="8">&nbsp;CHECK #</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:7" colspan="8"><u>__________________________________________</u></td>
+									</tr>				
+								</table>
+							</td>
+							<td border=".75" valign="top">
+								<table cellpadding="0" cellspacing="0" border="0">
+									<tr> 
+										<td style="font-size:8">CARRIER SIGNATURE / PICKUP DATE</td>
+									</tr> 
+									<tr> 
+										<td style="font-size:6">Carrier acknowledges receipt of packages and required placards.<br />Carrier certifies emergency response information was made</td> 
+									</tr>
+									<tr> 
+										<td style="font-size:6">available and/or carrier has the DOT emergency response<br />guidebook or equivalent documentation in the vehicle. Property</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">described above is received in good order, except as noted.</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+									<tr> 
+										<td style="font-size:6">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+	#pageBreak()
+				
+				#end
+			#end
+		#end
+	#end
+
+#end
+</body>
+</html>
