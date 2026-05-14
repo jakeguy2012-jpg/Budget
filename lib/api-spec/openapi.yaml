@@ -1,22 +1,29 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Family Finance Hub API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: auth
+  - name: dashboard
+  - name: transactions
+  - name: categories
+  - name: budgets
+  - name: accounts
+  - name: connections
+  - name: rules
+  - name: imports
+  - name: export
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +31,607 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Invalid credentials
+        "429":
+          description: Too many attempts
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /transactions:
+    get:
+      operationId: getTransactions
+      tags: [transactions]
+      summary: List transactions
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: uncategorized
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: account
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /transactions/{id}:
+    patch:
+      operationId: updateTransaction
+      tags: [transactions]
+      summary: Update transaction category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  /categories:
+    get:
+      operationId: getCategories
+      tags: [categories]
+      summary: List categories
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+
+  /budgets:
+    get:
+      operationId: getBudgets
+      tags: [budgets]
+      summary: List budgets for current month
+      responses:
+        "200":
+          description: Budgets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Budget"
+    post:
+      operationId: createBudget
+      tags: [budgets]
+      summary: Create or update budget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetInput"
+      responses:
+        "200":
+          description: Budget
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+
+  /accounts:
+    get:
+      operationId: getAccounts
+      tags: [accounts]
+      summary: List accounts
+      responses:
+        "200":
+          description: Accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+
+  /connections:
+    get:
+      operationId: getConnections
+      tags: [connections]
+      summary: List connections
+      responses:
+        "200":
+          description: Connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connection"
+    post:
+      operationId: createConnection
+      tags: [connections]
+      summary: Add connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+
+  /connections/{id}/sync:
+    post:
+      operationId: syncConnection
+      tags: [connections]
+      summary: Trigger manual sync
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Sync started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                required: [message]
+
+  /rules:
+    get:
+      operationId: getRules
+      tags: [rules]
+      summary: List rules
+      responses:
+        "200":
+          description: Rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RulesPage"
+    post:
+      operationId: createRule
+      tags: [rules]
+      summary: Create rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RuleInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rule"
+
+  /rules/{id}:
+    patch:
+      operationId: updateRule
+      tags: [rules]
+      summary: Update rule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RuleUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rule"
+    delete:
+      operationId: deleteRule
+      tags: [rules]
+      summary: Delete rule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Deleted
+
+  /rules/apply:
+    post:
+      operationId: applyRules
+      tags: [rules]
+      summary: Re-run rules on uncategorized transactions
+      responses:
+        "200":
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  applied: { type: integer }
+                required: [applied]
+
+  /imports:
+    post:
+      operationId: importCsv
+      tags: [imports]
+      summary: Import CSV transactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CsvImportInput"
+      responses:
+        "200":
+          description: Imported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported: { type: integer }
+                required: [imported]
+
+  /export:
+    get:
+      operationId: exportData
+      tags: [export]
+      summary: Export data
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [transactions, budgets, json]
+      responses:
+        "200":
+          description: Exported data
+          content:
+            text/csv:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+
 components:
   schemas:
     HealthStatus:
       type: object
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
+      required: [status]
 
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        username: { type: string }
+        role: { type: string }
+        householdId: { type: string }
+        householdName: { type: string }
+      required: [id, name, username, role, householdId, householdName]
+
+    LoginInput:
+      type: object
+      properties:
+        username: { type: string }
+        password: { type: string }
+      required: [username, password]
+
+    DashboardSummary:
+      type: object
+      properties:
+        spending: { type: number }
+        income: { type: number }
+        netCashFlow: { type: number }
+        uncategorizedCount: { type: integer }
+        byCategory:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              value: { type: number }
+              color: { type: string }
+            required: [name, value, color]
+        byAccount:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              value: { type: number }
+            required: [name, value]
+        budgets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Budget"
+      required: [spending, income, netCashFlow, uncategorizedCount, byCategory, byAccount, budgets]
+
+    Transaction:
+      type: object
+      properties:
+        id: { type: string }
+        date: { type: string }
+        description: { type: string }
+        merchantName: { type: ["string", "null"] }
+        amount: { type: string }
+        direction: { type: string }
+        userReviewed: { type: boolean }
+        excludedFromBudget: { type: boolean }
+        notes: { type: ["string", "null"] }
+        categoryId: { type: ["string", "null"] }
+        categoryName: { type: ["string", "null"] }
+        categoryColor: { type: ["string", "null"] }
+        accountId: { type: string }
+        accountName: { type: string }
+      required: [id, date, description, amount, direction, userReviewed, excludedFromBudget, accountId, accountName]
+
+    TransactionUpdate:
+      type: object
+      properties:
+        categoryId: { type: ["string", "null"] }
+        userReviewed: { type: boolean }
+        notes: { type: ["string", "null"] }
+        excludedFromBudget: { type: boolean }
+
+    Category:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        color: { type: string }
+        icon: { type: string }
+        isDefault: { type: boolean }
+      required: [id, name, color, icon, isDefault]
+
+    CategoryInput:
+      type: object
+      properties:
+        name: { type: string }
+        color: { type: string }
+        icon: { type: string }
+      required: [name]
+
+    Budget:
+      type: object
+      properties:
+        id: { type: string }
+        categoryId: { type: string }
+        categoryName: { type: string }
+        categoryColor: { type: string }
+        month: { type: string }
+        planned: { type: string }
+      required: [id, categoryId, categoryName, categoryColor, month, planned]
+
+    BudgetInput:
+      type: object
+      properties:
+        categoryId: { type: string }
+        month: { type: string }
+        planned: { type: number }
+      required: [categoryId, planned]
+
+    Account:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string }
+        subtype: { type: ["string", "null"] }
+        mask: { type: ["string", "null"] }
+        currentBalance: { type: string }
+        currency: { type: string }
+        isActive: { type: boolean }
+        provider: { type: string }
+        connectionName: { type: string }
+      required: [id, name, type, currentBalance, currency, isActive, provider, connectionName]
+
+    Connection:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        provider: { type: string }
+        isActive: { type: boolean }
+        lastSyncedAt: { type: ["string", "null"] }
+        syncRuns:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              startedAt: { type: string }
+              status: { type: string }
+              transactionsInserted: { type: integer }
+              errorMessage: { type: ["string", "null"] }
+            required: [id, startedAt, status, transactionsInserted]
+      required: [id, name, provider, isActive, syncRuns]
+
+    ConnectionInput:
+      type: object
+      properties:
+        provider: { type: string }
+        name: { type: string }
+        credential: { type: string }
+      required: [provider, name, credential]
+
+    Rule:
+      type: object
+      properties:
+        id: { type: string }
+        categoryId: { type: string }
+        categoryName: { type: string }
+        merchantContains: { type: ["string", "null"] }
+        descriptionContains: { type: ["string", "null"] }
+        priority: { type: integer }
+        excludeFromBudget: { type: boolean }
+        isActive: { type: boolean }
+      required: [id, categoryId, categoryName, priority, excludeFromBudget, isActive]
+
+    RuleInput:
+      type: object
+      properties:
+        categoryId: { type: string }
+        merchantContains: { type: string }
+        descriptionContains: { type: string }
+        priority: { type: integer }
+        excludeFromBudget: { type: boolean }
+      required: [categoryId]
+
+    RuleUpdate:
+      type: object
+      properties:
+        categoryId: { type: string }
+        merchantContains: { type: ["string", "null"] }
+        descriptionContains: { type: ["string", "null"] }
+        priority: { type: integer }
+        excludeFromBudget: { type: boolean }
+        isActive: { type: boolean }
+
+    RulesPage:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/Rule"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              merchantName: { type: ["string", "null"] }
+              count: { type: integer }
+            required: [count]
+      required: [rules, categories, suggestions]
+
+    CsvImportInput:
+      type: object
+      properties:
+        csv: { type: string }
+        dateColumn: { type: string }
+        descriptionColumn: { type: string }
+        amountColumn: { type: string }
+        merchantColumn: { type: string }
+        accountColumn: { type: string }
+        transactionTypeColumn: { type: string }
+      required: [csv, dateColumn, descriptionColumn, amountColumn]
