@@ -1,4 +1,5 @@
 #!/bin/bash
 set -e
 pnpm install --frozen-lockfile
-pnpm --filter db push
+# --force skips interactive prompts (e.g. "truncate table?" → No by default)
+pnpm --filter db push -- --force
