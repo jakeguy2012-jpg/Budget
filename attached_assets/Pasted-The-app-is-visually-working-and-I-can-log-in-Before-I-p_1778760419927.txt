@@ -1,0 +1,313 @@
+The app is visually working and I can log in. Before I pay for SimpleFIN Bridge or connect any real bank accounts, perform a full readiness review and add a safe demo/test path.
+
+Do not rebuild the app from scratch.
+Do not re-import the repo.
+Continue from the current working Replit project.
+
+Current context:
+- The app is running in Replit.
+- I can log in.
+- The layout/UI is visually pleasing.
+- The app appears to support SimpleFIN bank sync.
+- SimpleFIN Bridge appears to require a paid subscription for real bank connections, so I want to validate the app before paying or connecting real financial accounts.
+- I want this to become production-minded, but I want a safe staged path:
+  1. Demo/mock validation
+  2. Limited real-account testing
+  3. Personal production use
+
+Primary goal:
+Determine whether the app is currently safe and stable enough to start testing with real financial accounts through SimpleFIN, and improve the app so I can validate most functionality without needing a paid SimpleFIN Bridge subscription yet.
+
+Do not fake success. If something is not working, say exactly what is not working and fix it if possible.
+
+---
+
+PART 1 — READINESS REVIEW
+
+Please verify the following:
+
+1. Confirm the database is persistent across Replit restarts.
+2. Confirm all required secrets are present:
+   - DATABASE_URL
+   - SESSION_SECRET or JWT_SECRET
+   - APP_ENCRYPTION_KEY
+   - any SimpleFIN-specific secrets
+   - any frontend/backend URL secrets needed by Replit
+3. Confirm SimpleFIN credentials/access URLs are encrypted at rest.
+4. Confirm SimpleFIN access URLs/tokens are never logged.
+5. Confirm no raw SimpleFIN credentials are exposed in frontend responses.
+6. Confirm all financial API routes require authentication.
+7. Confirm sync is read-only.
+8. Confirm there are no payment, transfer, ACH, card-management, or money-movement routes.
+9. Confirm transaction deduplication logic exists.
+10. Confirm repeated syncs do not duplicate transactions.
+11. Confirm account, balance, and transaction sync logic works with test/mock data.
+12. Confirm errors are handled cleanly if SimpleFIN fails.
+13. Confirm there is a disconnect/revoke flow, or document the manual process.
+14. Confirm backup/export exists before using real data.
+15. Run tests, typecheck, and build if available.
+16. Confirm the app does not rely on temporary/non-persistent local files for critical user data.
+17. Confirm the app survives workflow restart without losing user/account/transaction data.
+
+At the end of this section, give me a readiness verdict:
+
+- SAFE FOR DEMO ONLY
+- SAFE FOR LIMITED REAL-ACCOUNT TESTING
+- SAFE FOR PERSONAL PRODUCTION USE
+
+Also list exact blockers that prevent moving to the next readiness level.
+
+---
+
+PART 2 — ADD DEMO / MOCK SIMPLEFIN MODE
+
+Before I pay for SimpleFIN Bridge or connect real accounts, add a safe demo/test mode for bank sync.
+
+Requirements:
+
+1. Add a mock SimpleFIN/demo bank sync provider.
+2. Make it selectable with an environment variable, such as:
+   - BANK_SYNC_PROVIDER=mock
+   - BANK_SYNC_PROVIDER=simplefin
+3. Mock mode should not require a SimpleFIN Bridge subscription.
+4. Mock mode should create realistic but fake household finance data:
+   - checking account
+   - savings account
+   - credit card account
+   - realistic balances
+   - posted transactions
+   - pending transactions if supported
+   - income transactions
+   - grocery, restaurant, utility, mortgage/rent, insurance, gas, shopping, subscription, and transfer examples
+5. Mock transactions should have stable IDs so repeated syncs do not duplicate records.
+6. Run mock sync twice and confirm duplicate transactions are not created.
+7. Add a visible banner when running in mock/demo mode:
+   “Demo bank sync mode — no real financial accounts connected.”
+8. Keep the real SimpleFIN provider intact.
+9. Clearly separate mock/demo mode from real SimpleFIN mode in code and UI.
+10. Document how to switch from mock mode to real SimpleFIN mode.
+
+---
+
+PART 3 — SIMPLEFIN BRIDGE REAL-ACCOUNT PATH
+
+Add or improve documentation and UI guidance explaining how real SimpleFIN Bridge setup works.
+
+Document the real-account flow:
+
+1. User creates or signs into SimpleFIN Bridge.
+2. User subscribes to SimpleFIN Bridge if required.
+3. User connects financial institutions in SimpleFIN Bridge.
+4. User generates a setup token/access URL.
+5. User pastes/claims that setup token/access URL inside this app.
+6. App stores the resulting SimpleFIN access URL encrypted at rest.
+7. App uses SimpleFIN only for read-only account, balance, and transaction sync.
+8. App never stores bank usernames/passwords.
+9. App never initiates transfers, payments, ACH, card actions, or account changes.
+
+Add UI copy before connecting a real account:
+
+- Explain that SimpleFIN Bridge may require a paid subscription.
+- Explain that this app should first be tested in demo/mock mode.
+- Explain that real-account testing should start with one low-risk account or institution.
+- Explain that sync is read-only.
+- Explain that credentials/access URLs are encrypted.
+- Warn users not to paste SimpleFIN access URLs into chat, logs, screenshots, or support messages.
+
+Add a simple “Real account readiness checklist” in the UI or docs.
+
+Checklist should include:
+
+- Demo sync tested successfully
+- Repeated sync does not duplicate transactions
+- Database persistence confirmed
+- Backup/export confirmed
+- APP_ENCRYPTION_KEY configured
+- No raw SimpleFIN tokens in logs
+- API routes protected by authentication
+- One account tested before connecting all accounts
+
+---
+
+PART 4 — UI / EASE OF USE IMPROVEMENTS
+
+The current layout is visually pleasing. Keep that direction, but improve usability.
+
+Please add or improve the following where reasonable:
+
+Dashboard:
+1. Add a clear monthly snapshot:
+   - income
+   - spending
+   - net cash flow
+   - top spending categories
+   - account balances
+2. Add an “as of last sync” timestamp.
+3. Add empty states that explain what to do next.
+4. Add clear demo data labels when using mock mode.
+
+Bank connections page:
+1. Add a guided connection wizard:
+   Step 1: choose demo mode or real SimpleFIN
+   Step 2: explain SimpleFIN Bridge
+   Step 3: paste setup token/access URL
+   Step 4: run first sync
+   Step 5: review imported accounts
+2. Add connection status cards:
+   - connected
+   - last sync time
+   - last sync result
+   - transaction count imported
+   - error state if sync failed
+3. Add a disconnect button or document the manual disconnect process.
+4. Add a warning before deleting/disconnecting financial data.
+
+Transactions:
+1. Add filters:
+   - date range
+   - account
+   - category
+   - pending/posted
+   - uncategorized
+2. Add search.
+3. Add bulk category update if practical.
+4. Add clear indicators for income vs expense.
+5. Add duplicate-detection indicators if practical.
+6. Add a “needs review” queue for uncategorized or low-confidence transactions.
+
+Categories/Budget:
+1. Add simple category management.
+2. Add monthly category budget targets.
+3. Add over/under budget indicators.
+4. Add a simple setup wizard for initial household budget categories.
+5. Allow transaction category overrides to persist.
+
+Settings:
+1. Add a settings page or improve the existing one.
+2. Show current sync provider:
+   - mock
+   - simplefin
+3. Show app mode:
+   - demo
+   - real-account test
+   - production
+4. Show database status.
+5. Show backup/export options.
+6. Show security/read-only status.
+7. Show required secrets status without exposing secret values.
+
+Sync health:
+1. Add sync history.
+2. Add last successful sync.
+3. Add last failed sync.
+4. Add error message redaction.
+5. Add retry guidance.
+6. Add manual sync button.
+7. Add clear “safe to retry” behavior.
+
+General UX:
+1. Improve loading states.
+2. Improve error messages.
+3. Improve mobile responsiveness.
+4. Add helpful tooltips for financial terms.
+5. Add confirmation dialogs for destructive actions.
+6. Add clear first-run onboarding:
+   - use demo data
+   - configure SimpleFIN
+   - review categories
+   - set budgets
+   - export/backup data
+
+---
+
+PART 5 — SECURITY AND PRIVACY GUARDRAILS
+
+This is personal finance software. Treat safety seriously.
+
+Required safeguards:
+
+1. Never log SimpleFIN access URLs, setup tokens, credentials, or raw secret values.
+2. Never display raw SimpleFIN access URLs in the UI.
+3. Encrypt stored SimpleFIN access URLs/tokens at rest.
+4. Validate APP_ENCRYPTION_KEY at startup.
+5. Validate SESSION_SECRET/JWT_SECRET at startup.
+6. Validate DATABASE_URL at startup.
+7. Require auth for all financial data routes.
+8. Scope financial data to the logged-in household/user.
+9. Redact sensitive values from errors.
+10. Add comments/documentation stating that this app must remain read-only.
+11. Confirm there are no money movement features.
+12. Confirm exports do not include secrets or raw tokens.
+13. Add safe logging helpers if they do not exist.
+14. Confirm production mode cannot start with weak/default secrets.
+
+---
+
+PART 6 — BACKUP / EXPORT READINESS
+
+Before this can be used with real accounts, I need a recovery path.
+
+Please verify or add:
+
+1. Transaction CSV export.
+2. Household JSON export.
+3. Budget/category export if practical.
+4. Database backup instructions.
+5. Database restore instructions.
+6. Replit-specific backup notes.
+7. Warning that the app should not be used for real accounts until backup/export has been tested.
+
+---
+
+PART 7 — TESTING
+
+Run or add tests for the highest-risk areas:
+
+1. Auth-required API access.
+2. Mock sync creates accounts/transactions.
+3. Repeated mock sync does not duplicate transactions.
+4. SimpleFIN secrets/access URLs are encrypted before storage.
+5. Redaction prevents secrets from appearing in logs/errors.
+6. Transaction categorization works.
+7. Export routes work.
+8. Build/typecheck passes if available.
+
+Run:
+
+- install if needed
+- migrations if needed
+- seed if needed
+- tests
+- typecheck
+- build
+
+Fix blocking failures.
+
+---
+
+FINAL REPORT FORMAT
+
+At the end, provide a concise report with:
+
+1. Current app status
+2. Readiness verdict:
+   - SAFE FOR DEMO ONLY
+   - SAFE FOR LIMITED REAL-ACCOUNT TESTING
+   - SAFE FOR PERSONAL PRODUCTION USE
+3. Exact blockers to the next level
+4. Final Replit preview/run instructions
+5. Demo login credentials
+6. Required Replit Secrets
+7. Current BANK_SYNC_PROVIDER value and how to change it
+8. Database setup summary
+9. SimpleFIN Bridge real-account setup instructions
+10. Backup/export instructions
+11. Files changed
+12. Commands run
+13. Tests/checks run
+14. Remaining limitations
+15. Exact next steps before I pay for SimpleFIN Bridge
+16. Exact next steps before I connect one real financial account
+
+Important:
+Do not overstate readiness. If real-account sync has not been tested with an actual SimpleFIN Bridge connection, say that directly.
