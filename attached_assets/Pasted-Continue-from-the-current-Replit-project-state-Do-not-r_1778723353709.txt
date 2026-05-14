@@ -1,0 +1,130 @@
+Continue from the current Replit project state. Do not re-import or re-clone the GitHub repo.
+
+Context from the work so far:
+- The project has already been imported into Replit.
+- You already inspected the app and identified it as a Family Finance Hub.
+- You determined the current app uses:
+  - Next.js originally
+  - Prisma + PostgreSQL
+  - JWT auth
+  - SimpleFIN bank sync
+  - API routes
+- You began migrating it from Vercel/Next.js to a Replit-compatible app.
+- You created or edited:
+  - openapi.yaml
+  - DB schema files
+  - API server routes
+  - frontend pages
+  - index.css
+  - workflow configuration
+  - seed.ts
+- You started both frontend and API workflows.
+- The API is responding with 401 for unauthenticated calls, which is expected.
+- The frontend is serving after resolving the port conflict.
+- APP_ENCRYPTION_KEY was requested for encrypting SimpleFIN credentials at rest.
+- You were in the middle of running the seed script to create demo users.
+
+Important correction:
+Do not assume this is currently Plaid-based unless the existing code actually contains Plaid. Based on your inspection, this Replit version appears to be using SimpleFIN, not Plaid. Work with the actual current codebase instead of changing providers unnecessarily.
+
+Your next task:
+Finish getting the current Replit version fully working.
+
+Please do the following:
+
+1. Continue from the current files and workflow state.
+2. Finish running the seed script successfully.
+3. Create or confirm demo login credentials.
+4. Verify the frontend login flow works.
+5. Verify authenticated API calls work after login.
+6. Verify the dashboard loads.
+7. Verify the database connection works.
+8. Verify SimpleFIN credential encryption works using APP_ENCRYPTION_KEY.
+9. Confirm all required Replit Secrets are present.
+10. Fix any remaining startup, build, routing, auth, or database issues.
+11. Run the app end-to-end in Replit preview.
+12. Do not restart the project from scratch.
+13. Do not replace the current architecture unless something is broken.
+14. Do not remove SimpleFIN support unless there is a strong reason.
+15. Keep the app read-only for financial account data.
+
+I want this to be production-minded and more than a basic MVP.
+
+Add or improve the following where reasonable:
+
+Authentication/security:
+- JWT/session secret validation
+- secure password hashing
+- protected API routes
+- frontend redirect behavior for unauthenticated users
+- logout flow
+- clear demo-user handling
+- no secrets logged to console
+- redaction of sensitive financial/banking credentials
+
+Bank connection safety:
+- Keep SimpleFIN credentials encrypted at rest.
+- Do not display raw access URLs, tokens, passwords, or credentials.
+- Make financial sync read-only.
+- Add clear warnings before connecting real financial accounts.
+- Add documentation explaining SimpleFIN’s role and how real-account connection works.
+- Clearly document whether real accounts can be connected through SimpleFIN Bridge and what manual steps are required.
+
+Database:
+- Confirm whether the Replit app is using Postgres, SQLite, or another DB.
+- Make sure migrations/schema are applied correctly.
+- Seed demo data if appropriate.
+- Add safe demo household/user data.
+- Confirm transaction/category/budget tables work.
+
+Frontend:
+- Verify and polish:
+  - Login page
+  - Dashboard
+  - Accounts/connections page
+  - Transaction review page
+  - Budget/category pages
+  - Sync health/settings page
+  - Loading states
+  - Empty states
+  - Error states
+
+API:
+- Verify all route handlers are wired correctly.
+- Confirm 401 behavior is correct before login.
+- Confirm successful API responses after login.
+- Add defensive error handling.
+- Add sync logging/audit where practical.
+- Make sure no API route supports money movement, transfers, ACH, payments, card actions, or account changes.
+
+Replit:
+- Confirm final workflows.
+- Confirm ports.
+- Confirm .replit configuration.
+- Confirm frontend and API both run reliably.
+- Remove stale process/port conflict issues if they recur.
+- Ensure the app works from Replit preview.
+
+Testing:
+- Run available tests.
+- Add minimal tests if critical auth/sync/finance logic is untested.
+- Run typecheck/build if available.
+- Report failures honestly and fix blocking ones.
+
+At the end, provide a concise summary with:
+
+1. Current app status
+2. Final preview/run instructions
+3. Demo login credentials
+4. Required Replit Secrets
+5. Database setup summary
+6. SimpleFIN real-account setup instructions
+7. Files changed
+8. Commands run
+9. Tests/checks run
+10. Remaining limitations
+11. Whether this is safe to use with real accounts yet
+12. Exact next steps before connecting real financial accounts
+
+Important:
+Do not use fake success. If something is not working, say exactly what is not working and fix it if possible.

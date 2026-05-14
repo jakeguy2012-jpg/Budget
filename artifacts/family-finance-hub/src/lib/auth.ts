@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./api";
+import { apiGet, apiPost, ApiError } from "./api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 
@@ -17,10 +17,13 @@ export function useMe() {
     queryFn: async () => {
       try {
         return await apiGet<User>("/auth/me");
-      } catch {
-        return null;
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) return null;
+        throw err;
       }
     },
+    staleTime: 5 * 60_000,
+    retry: false,
   });
 }
 
@@ -41,7 +44,7 @@ export function useLogout() {
   const qc = useQueryClient();
   const [, nav] = useLocation();
   return useMutation({
-    mutationFn: () => apiPost("/auth/logout", {}),
+    mutationFn: () => apiPost<{ ok: boolean }>("/auth/logout", {}),
     onSuccess: () => {
       qc.setQueryData(["me"], null);
       qc.clear();
