@@ -58,10 +58,12 @@ export async function getCurrentUser(req: Request) {
   }
 }
 
+const secure = process.env["NODE_ENV"] === "production" ? "; Secure" : "";
+
 export function sessionCookie(token: string) {
-  return `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${7 * 24 * 60 * 60}`;
+  return `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${7 * 24 * 60 * 60}${secure}`;
 }
 
 export function clearSessionCookie() {
-  return `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`;
+  return `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secure}`;
 }
