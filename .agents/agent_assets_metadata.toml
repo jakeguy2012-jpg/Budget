@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "ndc-9cZfy5LmgTcyezP7W"
+uri = "file://artifacts/family-finance-hub-mobile/assets/images/icon.png"
+type = "image"
+title = "finance_app_icon"
