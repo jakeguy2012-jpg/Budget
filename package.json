@@ -1,53 +1,16 @@
 {
-  "name": "family-finance-hub",
-  "version": "0.1.0",
-  "private": true,
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
   "scripts": {
-    "dev": "next dev -H 0.0.0.0 -p ${PORT:-3000}",
-    "build": "prisma generate && next build",
-    "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
-    "lint": "next lint",
-    "test": "vitest run",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate deploy",
-    "prisma:seed": "tsx prisma/seed.ts",
-    "worker": "tsx src/worker/sync-worker.ts"
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
-  "dependencies": {
-    "@prisma/client": "^5.22.0",
-    "bcryptjs": "^2.4.3",
-    "clsx": "^2.1.1",
-    "csv-parse": "^5.5.6",
-    "date-fns": "^3.6.0",
-    "jsonwebtoken": "^9.0.2",
-    "next": "^14.2.18",
-    "node-cron": "^3.0.3",
-    "papaparse": "^5.4.1",
-    "prisma": "^5.22.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "recharts": "^2.13.3",
-    "zod": "^3.23.8"
-  },
+  "private": true,
   "devDependencies": {
-    "@testing-library/react": "^15.0.7",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^20.17.6",
-    "@types/node-cron": "^3.0.11",
-    "@types/papaparse": "^5.3.14",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "autoprefixer": "^10.4.20",
-    "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.18",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.15",
-    "tsx": "^4.19.2",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.5"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "typescript": "~5.9.2",
+    "prettier": "^3.8.1"
   }
 }
