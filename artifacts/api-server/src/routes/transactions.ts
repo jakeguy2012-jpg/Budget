@@ -88,6 +88,33 @@ router.patch("/:id", async (req, res) => {
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   const { id } = req.params;
+
+  // Enforce ownership: transaction → account → connection → household
+  const connections = await db
+    .select({ id: connectionsTable.id })
+    .from(connectionsTable)
+    .where(eq(connectionsTable.householdId, user.householdId));
+  const connectionIds = connections.map((c) => c.id);
+
+  const authorizedAccountIds: string[] = [];
+  for (const cid of connectionIds) {
+    const accts = await db.select({ id: accountsTable.id }).from(accountsTable).where(eq(accountsTable.connectionId, cid));
+    authorizedAccountIds.push(...accts.map((a) => a.id));
+  }
+
+  if (authorizedAccountIds.length === 0) return res.status(404).json({ error: "Not found" });
+
+  // Verify the transaction belongs to one of the household's accounts
+  const existing = await db
+    .select({ id: transactionsTable.id, accountId: transactionsTable.accountId })
+    .from(transactionsTable)
+    .where(eq(transactionsTable.id, id))
+    .limit(1);
+
+  if (!existing[0] || !authorizedAccountIds.includes(existing[0].accountId)) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
   const { categoryId, userReviewed, notes, excludedFromBudget } = req.body as {
     categoryId?: string | null;
     userReviewed?: boolean;
